@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { supabaseControl } from './supabase-control';
 
 export type UserProfile = {
   id: string;
@@ -154,7 +154,7 @@ export async function signIn(email: string, password: string): Promise<{ success
   try {
     const sanitizedEmail = sanitizeInput(email.toLowerCase());
 
-    const { error } = await supabase.auth.signInWithPassword({
+    const { error } = await supabaseControl.auth.signInWithPassword({
       email: sanitizedEmail,
       password,
     });
@@ -175,7 +175,7 @@ export async function signIn(email: string, password: string): Promise<{ success
  */
 export async function signOut(): Promise<{ success: boolean; error?: string }> {
   try {
-    const { error } = await supabase.auth.signOut();
+    const { error } = await supabaseControl.auth.signOut();
 
     if (error) {
       return { success: false, error: error.message };
@@ -193,11 +193,11 @@ export async function signOut(): Promise<{ success: boolean; error?: string }> {
  */
 export async function getCurrentUserProfile(): Promise<UserProfile | null> {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user } } = await supabaseControl.auth.getUser();
 
     if (!user) return null;
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseControl
       .from('user_profiles')
       .select('*')
       .eq('id', user.id)
@@ -220,11 +220,11 @@ export async function getCurrentUserProfile(): Promise<UserProfile | null> {
  */
 export async function getUserOrganizations(): Promise<Organization[]> {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user } } = await supabaseControl.auth.getUser();
 
     if (!user) return [];
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseControl
       .from('organization_members')
       .select('organization_id, organizations(*)')
       .eq('user_id', user.id);
@@ -248,7 +248,7 @@ export async function requestPasswordReset(email: string): Promise<{ success: bo
   try {
     const sanitizedEmail = sanitizeInput(email.toLowerCase());
 
-    const { error } = await supabase.auth.resetPasswordForEmail(sanitizedEmail, {
+    const { error } = await supabaseControl.auth.resetPasswordForEmail(sanitizedEmail, {
       redirectTo: `${window.location.origin}/reset-password`,
     });
 
@@ -274,7 +274,7 @@ export async function updatePassword(newPassword: string): Promise<{ success: bo
       return { success: false, error: passwordValidation.error };
     }
 
-    const { error } = await supabase.auth.updateUser({
+    const { error } = await supabaseControl.auth.updateUser({
       password: newPassword,
     });
 

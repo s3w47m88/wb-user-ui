@@ -1,4 +1,4 @@
-import { ComponentData, ThemeConfig } from './supabase';
+import { ComponentData, ThemeConfig } from './supabase-content';
 
 export type SiteType = 'political' | 'business' | 'personal' | 'nonprofit';
 

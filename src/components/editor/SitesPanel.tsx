@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Plus, ExternalLink, Trash2 } from 'lucide-react';
 import { useEditorStore } from '@/store/editor-store';
 import { getAllPages, deletePage, loadPage } from '@/lib/page-service';
-import { PageConfig } from '@/lib/supabase';
+import { PageConfig } from '@/lib/supabase-content';
 
 type SitesPanelProps = {
   isOpen: boolean;

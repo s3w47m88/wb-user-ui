@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { ComponentData, ThemeConfig, PageConfig } from '@/lib/supabase';
+import { ComponentData, ThemeConfig, PageConfig } from '@/lib/supabase-content';
 import { savePage, updatePage } from '@/lib/page-service';
 
 type EditorState = {

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { loadPage } from '@/lib/page-service';
-import { PageConfig } from '@/lib/supabase';
+import { PageConfig } from '@/lib/supabase-content';
 import { EditableBlock } from '@/components/editor/EditableBlock';
 
 export default function PreviewPage() {

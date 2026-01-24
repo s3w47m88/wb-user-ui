@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
+import { supabaseControl } from '@/lib/supabase-control';
 import { getUserOrganizations, Organization } from '@/lib/auth-service';
 import { Loader2, Building2 } from 'lucide-react';
 
@@ -24,7 +24,7 @@ export const OrganizationSelector: React.FC<OrganizationSelectorProps> = ({ onSe
 
     try {
       // Check if user email is confirmed first
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await supabaseControl.auth.getUser();
 
       if (!user) {
         setError('No user found. Please sign in.');

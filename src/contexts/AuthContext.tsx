@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
+import { supabaseControl } from '@/lib/supabase-control';
 import { getCurrentUserProfile, getUserOrganizations, Organization } from '@/lib/auth-service';
 import type { User } from '@supabase/supabase-js';
 
@@ -39,7 +39,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     // Check active session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabaseControl.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
       if (session?.user) {
         loadUserData();
@@ -51,7 +51,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabaseControl.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
       if (session?.user) {
         loadUserData();
@@ -79,7 +79,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const loadUserData = async () => {
     try {
       // Check if user email is confirmed
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await supabaseControl.auth.getUser();
 
       if (!user) {
         setLoading(false);
@@ -117,7 +117,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
+    await supabaseControl.auth.signOut();
     setUser(null);
     setProfile(null);
     setOrganizations([]);

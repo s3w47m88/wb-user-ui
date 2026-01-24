@@ -21,8 +21,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const supabaseServiceKey = process.env.SUPABASE_SECRET_KEY!;
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_CONTROL_URL!;
+    const supabaseServiceKey = process.env.SUPABASE_CONTROL_SECRET_KEY!;
 
     // Create admin client with service role key
     const adminClient = createClient(supabaseUrl, supabaseServiceKey, {

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
+import { supabaseControl } from '@/lib/supabase-control';
 import { LoginForm } from '@/components/auth/LoginForm';
 import { RegisterForm } from '@/components/auth/RegisterForm';
 import { ForgotPasswordForm } from '@/components/auth/ForgotPasswordForm';
@@ -17,7 +17,7 @@ export default function AuthPage() {
 
   const handleLoginSuccess = async () => {
     // After login, check if email is confirmed before showing org selector
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user } } = await supabaseControl.auth.getUser();
 
     if (!user?.email_confirmed_at) {
       // Email not confirmed, show confirmation message

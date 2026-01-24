@@ -3,7 +3,7 @@
 import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { ComponentData } from '@/lib/supabase';
+import { ComponentData } from '@/lib/supabase-content';
 import { getBlockComponent } from '@/lib/block-registry';
 import { useEditorStore } from '@/store/editor-store';
 import { GripVertical, Trash2 } from 'lucide-react';

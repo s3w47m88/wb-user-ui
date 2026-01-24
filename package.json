@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "migrate": "tsx scripts/migrate.ts"
+    "migrate": "tsx scripts/migrate.ts",
+    "seed:control-admin": "tsx scripts/seed-control-admin.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

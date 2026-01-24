@@ -23,8 +23,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const supabaseServiceKey = process.env.SUPABASE_SECRET_KEY!;
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_CONTROL_URL!;
+    const supabaseServiceKey = process.env.SUPABASE_CONTROL_SECRET_KEY!;
 
     // Create admin client with service role key to bypass RLS
     const adminClient = createClient(supabaseUrl, supabaseServiceKey, {
@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Create regular client for signup (to trigger confirmation email)
-    const regularClient = createClient(supabaseUrl, process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!, {
+    const regularClient = createClient(supabaseUrl, process.env.NEXT_PUBLIC_SUPABASE_CONTROL_PUBLISHABLE_KEY!, {
       auth: {
         autoRefreshToken: false,
         persistSession: false

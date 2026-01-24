@@ -1,4 +1,4 @@
-import { supabase, PageConfig } from './supabase';
+import { supabaseContent, PageConfig } from './supabase-content';
 
 /**
  * Get the currently selected organization ID from localStorage
@@ -15,7 +15,7 @@ export async function savePage(pageConfig: Omit<PageConfig, 'id' | 'created_at' 
     throw new Error('No organization selected. Please select an organization first.');
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await supabaseContent
     .from('pages')
     .insert({
       name: pageConfig.name,
@@ -42,7 +42,7 @@ export async function savePage(pageConfig: Omit<PageConfig, 'id' | 'created_at' 
 }
 
 export async function updatePage(id: string, pageConfig: Partial<PageConfig>) {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseContent
     .from('pages')
     .update({
       name: pageConfig.name,
@@ -69,7 +69,7 @@ export async function updatePage(id: string, pageConfig: Partial<PageConfig>) {
 }
 
 export async function loadPage(id: string) {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseContent
     .from('pages')
     .select('*')
     .eq('id', id)
@@ -86,7 +86,7 @@ export async function loadPage(id: string) {
 export async function listPages() {
   const organizationId = getSelectedOrganizationId();
 
-  let query = supabase
+  let query = supabaseContent
     .from('pages')
     .select('id, name, created_at, updated_at')
     .order('created_at', { ascending: false });
@@ -109,7 +109,7 @@ export async function listPages() {
 export async function getAllPages() {
   const organizationId = getSelectedOrganizationId();
 
-  let query = supabase
+  let query = supabaseContent
     .from('pages')
     .select('*')
     .order('created_at', { ascending: false });
@@ -131,7 +131,7 @@ export async function getAllPages() {
 }
 
 export async function deletePage(id: string) {
-  const { error } = await supabase
+  const { error } = await supabaseContent
     .from('pages')
     .delete()
     .eq('id', id);
