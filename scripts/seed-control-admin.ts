@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { createClient } from '@supabase/supabase-js';
 
 const controlUrl = process.env.NEXT_PUBLIC_SUPABASE_CONTROL_URL;
@@ -8,6 +9,10 @@ const adminEmail = 'agency@theportlandcompany.com';
 const adminFirstName = 'Agency';
 const adminLastName = 'Admin';
 const adminOrgName = process.env.DEFAULT_ADMIN_ORG_NAME || 'The Portland Company';
+const adminOrgSlug = adminOrgName
+  .toLowerCase()
+  .replace(/[^a-z0-9]+/g, '-')
+  .replace(/(^-|-$)/g, '') || 'organization';
 
 if (!controlUrl || !controlServiceKey) {
   throw new Error('Missing Control Plane env vars. Set NEXT_PUBLIC_SUPABASE_CONTROL_URL and SUPABASE_CONTROL_SECRET_KEY.');
@@ -86,6 +91,7 @@ async function main() {
       .from('organizations')
       .insert({
         name: adminOrgName,
+        slug: adminOrgSlug,
         created_by: userId,
       })
       .select('id')
