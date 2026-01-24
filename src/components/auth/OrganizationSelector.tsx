@@ -13,6 +13,10 @@ export const OrganizationSelector: React.FC<OrganizationSelectorProps> = ({ onSe
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [orgName, setOrgName] = useState('');
+  const [orgEmail, setOrgEmail] = useState('');
+  const [orgPhone, setOrgPhone] = useState('');
+  const [creatingOrg, setCreatingOrg] = useState(false);
 
   useEffect(() => {
     loadOrganizations();
@@ -41,7 +45,7 @@ export const OrganizationSelector: React.FC<OrganizationSelectorProps> = ({ onSe
       const orgs = await getUserOrganizations();
 
       if (orgs.length === 0) {
-        setError('No organizations found. Please contact support.');
+        setOrganizations([]);
       } else if (orgs.length === 1) {
         // Auto-select if only one organization
         onSelect(orgs[0].id);
@@ -56,6 +60,58 @@ export const OrganizationSelector: React.FC<OrganizationSelectorProps> = ({ onSe
     }
   };
 
+  const handleCreateOrganization = async () => {
+    if (!orgName.trim()) {
+      setError('Organization name is required.');
+      return;
+    }
+
+    setCreatingOrg(true);
+    setError('');
+
+    try {
+      const { data: { user } } = await supabaseControl.auth.getUser();
+
+      if (!user) {
+        setError('No user found. Please sign in.');
+        return;
+      }
+
+      const { data: orgData, error: orgError } = await supabaseControl
+        .from('organizations')
+        .insert({
+          name: orgName.trim(),
+          company_email: orgEmail.trim() || null,
+          company_phone: orgPhone.trim() || null,
+          created_by: user.id,
+        })
+        .select()
+        .single();
+
+      if (orgError || !orgData) {
+        throw orgError || new Error('Failed to create organization.');
+      }
+
+      const { error: memberError } = await supabaseControl
+        .from('organization_members')
+        .insert({
+          organization_id: orgData.id,
+          user_id: user.id,
+        });
+
+      if (memberError) {
+        throw memberError;
+      }
+
+      onSelect(orgData.id);
+    } catch (err) {
+      console.error('Create organization error:', err);
+      setError('Failed to create organization. Please try again.');
+    } finally {
+      setCreatingOrg(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="w-full max-w-md mx-auto p-6 bg-white rounded-lg shadow-lg">
@@ -67,11 +123,77 @@ export const OrganizationSelector: React.FC<OrganizationSelectorProps> = ({ onSe
     );
   }
 
-  if (error) {
+  if (error && organizations.length > 0) {
     return (
       <div className="w-full max-w-md mx-auto p-6 bg-white rounded-lg shadow-lg">
         <div className="p-4 bg-red-50 border border-red-200 rounded-md">
           <p className="text-sm text-red-600">{error}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (organizations.length === 0) {
+    return (
+      <div className="w-full max-w-md mx-auto p-6 bg-white rounded-lg shadow-lg">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 bg-red-50 rounded-lg flex items-center justify-center">
+            <Building2 size={20} className="text-red-600" />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-gray-900">Create Your First Organization</h2>
+            <p className="text-sm text-gray-600">Set up your organization to get started.</p>
+          </div>
+        </div>
+
+        {error && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
+            <p className="text-sm text-red-600">{error}</p>
+          </div>
+        )}
+
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Organization Name
+            </label>
+            <input
+              value={orgName}
+              onChange={(e) => setOrgName(e.target.value)}
+              placeholder="The Portland Company"
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-transparent"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Company Email (optional)
+            </label>
+            <input
+              type="email"
+              value={orgEmail}
+              onChange={(e) => setOrgEmail(e.target.value)}
+              placeholder="team@example.com"
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-transparent"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Company Phone (optional)
+            </label>
+            <input
+              value={orgPhone}
+              onChange={(e) => setOrgPhone(e.target.value)}
+              placeholder="(555) 555-1234"
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-transparent"
+            />
+          </div>
+          <button
+            onClick={handleCreateOrganization}
+            disabled={creatingOrg}
+            className="w-full py-3 px-4 bg-red-600 hover:bg-red-700 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold rounded-md transition-colors"
+          >
+            {creatingOrg ? 'Creating Organization...' : 'Create Organization'}
+          </button>
         </div>
       </div>
     );

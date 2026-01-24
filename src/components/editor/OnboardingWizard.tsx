@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
-import { ChevronRight, CheckCircle, Eye, Briefcase, User, Heart, Flag } from 'lucide-react';
+import { CheckCircle, Eye, Globe, Link2, ChevronRight } from 'lucide-react';
 import { useEditorStore } from '@/store/editor-store';
-import { pageTemplates, PageTemplate, SiteType, getTemplatesBySiteType } from '@/lib/templates';
+import { pageTemplates, PageTemplate } from '@/lib/templates';
 import { Canvas } from './Canvas';
 
 type OnboardingWizardProps = {
@@ -12,25 +12,23 @@ type OnboardingWizardProps = {
 };
 
 type FormData = {
-  siteType: SiteType | null;
-  brandName: string;
-  tagline: string;
-  candidateName: string;
+  siteName: string;
+  domain: string;
+  useTemporaryDomain: boolean;
 };
 
 export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ isOpen, onComplete }) => {
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState<FormData>({
-    siteType: null,
-    brandName: '',
-    tagline: '',
-    candidateName: '',
+    siteName: '',
+    domain: '',
+    useTemporaryDomain: true,
   });
   const [selectedTemplate, setSelectedTemplate] = useState<PageTemplate | null>(null);
   const [previewTemplate, setPreviewTemplate] = useState<PageTemplate | null>(null);
   const { loadPage: loadPageToStore, setPageName } = useEditorStore();
 
-  const updateFormData = (key: keyof FormData, value: string) => {
+  const updateFormData = (key: keyof FormData, value: string | boolean) => {
     setFormData(prev => ({ ...prev, [key]: value }));
   };
 
@@ -40,34 +38,24 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ isOpen, onCo
 
   const handleComplete = async () => {
     if (selectedTemplate) {
+      const siteName = formData.siteName.trim() || selectedTemplate.name;
+      const siteDomain = formData.useTemporaryDomain ? null : formData.domain.trim();
+
       // Apply form data to selected template
       const customizedTemplate = {
         ...selectedTemplate,
-        name: formData.brandName || selectedTemplate.name,
-        components: selectedTemplate.components.map(comp => {
-          if (comp.type === 'hero' && comp.props.title) {
-            return {
-              ...comp,
-              props: {
-                ...comp.props,
-                title: formData.tagline || comp.props.title,
-                subtitle: formData.siteType === 'political' && formData.candidateName
-                  ? `${formData.candidateName} for America`
-                  : comp.props.subtitle,
-              }
-            };
-          }
-          return comp;
-        }),
+        name: siteName,
       };
 
       try {
         // Save to database first
         const { savePage } = await import('@/lib/page-service');
         const savedPage = await savePage({
-          name: formData.brandName || 'My Site',
+          name: siteName || 'My Site',
           components: customizedTemplate.components,
           theme: customizedTemplate.theme,
+          site_domain: siteDomain || undefined,
+          use_temporary_domain: formData.useTemporaryDomain,
         });
 
         // Then load into store
@@ -83,27 +71,20 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ isOpen, onCo
   };
 
   const canProceed = () => {
-    if (currentStep === 0) return formData.siteType !== null;
-    if (currentStep === 1) return selectedTemplate !== null;
-    if (currentStep === 2) return formData.brandName.trim() !== '';
-    if (formData.siteType === 'political') {
-      if (currentStep === 3) return formData.candidateName.trim() !== '';
-      if (currentStep === 4) return formData.tagline.trim() !== '';
-    } else {
-      if (currentStep === 3) return formData.tagline.trim() !== '';
+    if (currentStep === 0) {
+      if (!formData.siteName.trim()) return false;
+      if (!formData.useTemporaryDomain && !formData.domain.trim()) return false;
+      return true;
     }
-    return true;
+    if (currentStep === 1) return selectedTemplate !== null;
+    return false;
   };
 
-  const getTotalSteps = () => {
-    return formData.siteType === 'political' ? 5 : 4; // Political has extra candidate name step
-  };
-
-  const filteredTemplates = formData.siteType ? getTemplatesBySiteType(formData.siteType) : pageTemplates;
+  const filteredTemplates = pageTemplates.slice(0, 2);
 
   if (!isOpen) return null;
 
-  const totalSteps = getTotalSteps();
+  const totalSteps = 2;
   const isLastStep = currentStep === totalSteps - 1;
 
   const handleNext = () => {
@@ -133,62 +114,69 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ isOpen, onCo
 
         {/* Content */}
         <div className="px-8 pb-8">
-          {/* Step 0: Site Type Selection */}
+          {/* Step 0: Create Site */}
           {currentStep === 0 && (
             <div className="space-y-6">
               <div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">What type of site are you building?</h2>
-                <p className="text-gray-600">Choose the category that best fits your needs.</p>
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">Create Your First Site</h2>
+                <p className="text-gray-600">Give your site a name and choose a domain.</p>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <button
-                  onClick={() => updateFormData('siteType', 'political')}
-                  className={`p-6 border-2 rounded-lg transition-all text-left ${
-                    formData.siteType === 'political'
-                      ? 'border-red-600 bg-red-50'
-                      : 'border-gray-200 hover:border-red-300'
-                  }`}
-                >
-                  <Flag className={`w-8 h-8 mb-3 ${formData.siteType === 'political' ? 'text-red-600' : 'text-gray-400'}`} />
-                  <h3 className="font-semibold text-lg mb-1">For Political Use</h3>
-                  <p className="text-sm text-gray-600">Campaigns, candidates, PACs</p>
-                </button>
-                <button
-                  onClick={() => updateFormData('siteType', 'business')}
-                  className={`p-6 border-2 rounded-lg transition-all text-left ${
-                    formData.siteType === 'business'
-                      ? 'border-blue-600 bg-blue-50'
-                      : 'border-gray-200 hover:border-blue-300'
-                  }`}
-                >
-                  <Briefcase className={`w-8 h-8 mb-3 ${formData.siteType === 'business' ? 'text-blue-600' : 'text-gray-400'}`} />
-                  <h3 className="font-semibold text-lg mb-1">For My Business</h3>
-                  <p className="text-sm text-gray-600">Companies, services, products</p>
-                </button>
-                <button
-                  onClick={() => updateFormData('siteType', 'personal')}
-                  className={`p-6 border-2 rounded-lg transition-all text-left ${
-                    formData.siteType === 'personal'
-                      ? 'border-purple-600 bg-purple-50'
-                      : 'border-gray-200 hover:border-purple-300'
-                  }`}
-                >
-                  <User className={`w-8 h-8 mb-3 ${formData.siteType === 'personal' ? 'text-purple-600' : 'text-gray-400'}`} />
-                  <h3 className="font-semibold text-lg mb-1">For Personal/Portfolio</h3>
-                  <p className="text-sm text-gray-600">Personal brand, portfolio, blog</p>
-                </button>
-                <button
-                  onClick={() => updateFormData('siteType', 'nonprofit')}
-                  className={`p-6 border-2 rounded-lg transition-all text-left ${
-                    formData.siteType === 'nonprofit'
-                      ? 'border-green-600 bg-green-50'
-                      : 'border-gray-200 hover:border-green-300'
-                  }`}
-                >
-                  <Heart className={`w-8 h-8 mb-3 ${formData.siteType === 'nonprofit' ? 'text-green-600' : 'text-gray-400'}`} />
-                  <h3 className="font-semibold text-lg mb-1">For Nonprofit/Organization</h3>
-                  <p className="text-sm text-gray-600">Charities, causes, communities</p>
-                </button>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Site Name</label>
+                  <input
+                    value={formData.siteName}
+                    onChange={(e) => updateFormData('siteName', e.target.value)}
+                    placeholder="Example: The Portland Company"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                  />
+                </div>
+
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg">
+                    <input
+                      type="radio"
+                      id="temp-domain"
+                      checked={formData.useTemporaryDomain}
+                      onChange={() => updateFormData('useTemporaryDomain', true)}
+                    />
+                    <label htmlFor="temp-domain" className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <Globe className="w-4 h-4 text-gray-500" />
+                        <span className="font-medium text-gray-900">I don't have one yet</span>
+                      </div>
+                      <p className="text-sm text-gray-600">Create a temporary domain for me.</p>
+                    </label>
+                  </div>
+                  <div className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg">
+                    <input
+                      type="radio"
+                      id="custom-domain"
+                      checked={!formData.useTemporaryDomain}
+                      onChange={() => updateFormData('useTemporaryDomain', false)}
+                    />
+                    <label htmlFor="custom-domain" className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <Link2 className="w-4 h-4 text-gray-500" />
+                        <span className="font-medium text-gray-900">I have a domain</span>
+                      </div>
+                      <p className="text-sm text-gray-600">I want to use my custom domain.</p>
+                    </label>
+                  </div>
+                </div>
+
+                {!formData.useTemporaryDomain && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Domain</label>
+                    <input
+                      value={formData.domain}
+                      onChange={(e) => updateFormData('domain', e.target.value)}
+                      placeholder="yourdomain.com"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                    />
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -197,10 +185,10 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ isOpen, onCo
           {currentStep === 1 && (
             <div className="space-y-6">
               <div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">Choose your template</h2>
-                <p className="text-gray-600">Select a design that best fits your style.</p>
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">Choose a Template Theme</h2>
+                <p className="text-gray-600">Pick from the two available themes.</p>
               </div>
-              <div className="grid grid-cols-2 gap-4 max-h-96 overflow-y-auto">
+              <div className="grid grid-cols-2 gap-4">
                 {filteredTemplates.map((template) => (
                   <div
                     key={template.id}
@@ -245,79 +233,6 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ isOpen, onCo
                     </div>
                   </div>
                 ))}
-              </div>
-            </div>
-          )}
-
-          {/* Step 2: Brand Name */}
-          {currentStep === 2 && (
-            <div className="space-y-6">
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                  {formData.siteType === 'political' ? "What's your campaign name?" : "What's your brand name?"}
-                </h2>
-                <p className="text-gray-600">This will be the title of your website.</p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  {formData.siteType === 'political' ? 'Campaign Name' : 'Brand Name'}
-                </label>
-                <input
-                  type="text"
-                  value={formData.brandName}
-                  onChange={(e) => updateFormData('brandName', e.target.value)}
-                  placeholder={formData.siteType === 'political' ? 'e.g., Smith for Senate 2024' : 'e.g., My Company'}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent text-lg"
-                  autoFocus
-                />
-              </div>
-            </div>
-          )}
-
-          {/* Step 3: Candidate Name (Political Only) */}
-          {currentStep === 3 && formData.siteType === 'political' && (
-            <div className="space-y-6">
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">Who's the candidate?</h2>
-                <p className="text-gray-600">The name of the person running for office.</p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Candidate Name
-                </label>
-                <input
-                  type="text"
-                  value={formData.candidateName}
-                  onChange={(e) => updateFormData('candidateName', e.target.value)}
-                  placeholder="e.g., John Smith"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent text-lg"
-                  autoFocus
-                />
-              </div>
-            </div>
-          )}
-
-          {/* Step 3 OR 4: Tagline (depends on site type) */}
-          {((currentStep === 3 && formData.siteType !== 'political') || (currentStep === 4 && formData.siteType === 'political')) && (
-            <div className="space-y-6">
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                  {formData.siteType === 'political' ? "What's your campaign tagline?" : "What's your tagline?"}
-                </h2>
-                <p className="text-gray-600">A short, memorable phrase that captures your message.</p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Tagline
-                </label>
-                <input
-                  type="text"
-                  value={formData.tagline}
-                  onChange={(e) => updateFormData('tagline', e.target.value)}
-                  placeholder={formData.siteType === 'political' ? 'e.g., Fighting for American Values' : 'e.g., Your Success, Our Mission'}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent text-lg"
-                  autoFocus
-                />
               </div>
             </div>
           )}

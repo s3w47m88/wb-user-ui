@@ -11,6 +11,8 @@ export type PageConfig = {
   components: ComponentData[];
   theme: ThemeConfig;
   organization_id?: string;
+  site_domain?: string | null;
+  use_temporary_domain?: boolean;
   created_at?: string;
   updated_at?: string;
 };

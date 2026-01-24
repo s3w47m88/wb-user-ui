@@ -22,6 +22,8 @@ export async function savePage(pageConfig: Omit<PageConfig, 'id' | 'created_at' 
       components: pageConfig.components,
       theme: pageConfig.theme,
       organization_id: organizationId,
+      site_domain: pageConfig.site_domain || null,
+      use_temporary_domain: Boolean(pageConfig.use_temporary_domain),
     })
     .select()
     .single();
@@ -48,6 +50,8 @@ export async function updatePage(id: string, pageConfig: Partial<PageConfig>) {
       name: pageConfig.name,
       components: pageConfig.components,
       theme: pageConfig.theme,
+      site_domain: pageConfig.site_domain,
+      use_temporary_domain: pageConfig.use_temporary_domain,
     })
     .eq('id', id)
     .select()
