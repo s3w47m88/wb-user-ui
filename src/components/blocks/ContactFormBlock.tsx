@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useEditorStore } from '@/store/editor-store';
 
 export type ContactFormBlockProps = {
   title: string;
@@ -15,6 +16,7 @@ export const ContactFormBlock: React.FC<ContactFormBlockProps> = ({
   buttonText,
   backgroundColor = '#ffffff',
 }) => {
+  const theme = useEditorStore((state) => state.theme);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -33,8 +35,18 @@ export const ContactFormBlock: React.FC<ContactFormBlockProps> = ({
       style={{ backgroundColor }}
     >
       <div className="max-w-2xl mx-auto">
-        <h2 className="text-4xl font-bold text-center mb-4">{title}</h2>
-        <p className="text-center text-gray-600 mb-8">{description}</p>
+        <h2
+          className="text-4xl font-bold text-center mb-4"
+          style={{ fontFamily: theme.fonts.heading, color: theme.colors.text }}
+        >
+          {title}
+        </h2>
+        <p
+          className="text-center text-gray-600 mb-8"
+          style={{ fontFamily: theme.fonts.body, color: theme.colors.text }}
+        >
+          {description}
+        </p>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
@@ -48,6 +60,7 @@ export const ContactFormBlock: React.FC<ContactFormBlockProps> = ({
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              style={{ fontFamily: theme.fonts.body }}
             />
           </div>
 
@@ -62,6 +75,7 @@ export const ContactFormBlock: React.FC<ContactFormBlockProps> = ({
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              style={{ fontFamily: theme.fonts.body }}
             />
           </div>
 
@@ -76,12 +90,14 @@ export const ContactFormBlock: React.FC<ContactFormBlockProps> = ({
               value={formData.message}
               onChange={(e) => setFormData({ ...formData, message: e.target.value })}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              style={{ fontFamily: theme.fonts.body }}
             />
           </div>
 
           <button
             type="submit"
             className="w-full px-6 py-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold text-lg"
+            style={{ backgroundColor: theme.colors.primary, fontFamily: theme.fonts.body }}
           >
             {buttonText}
           </button>

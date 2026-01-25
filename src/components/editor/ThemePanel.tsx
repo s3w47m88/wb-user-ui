@@ -135,6 +135,7 @@ export const ThemePanel: React.FC<ThemePanelProps> = ({ isOpen, onClose }) => {
   const applyTheme = (prebuiltTheme: typeof prebuiltThemes[0]) => {
     updateTheme({
       colors: prebuiltTheme.colors,
+      fonts: prebuiltTheme.fonts || theme.fonts,
       mode: prebuiltTheme.mode,
     });
   };

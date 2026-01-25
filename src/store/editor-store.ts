@@ -47,18 +47,20 @@ const defaultTheme: ThemeConfig = {
 // Initialize currentPageId from localStorage if available
 const getInitialPageId = (): string | null => {
   if (typeof window !== 'undefined') {
-    return localStorage.getItem('currentPageId');
+    const storedId = localStorage.getItem('currentPageId');
+    return storedId && isValidUuid(storedId) ? storedId : null;
   }
   return null;
 };
 
+const isValidUuid = (value: string | null | undefined) =>
+  Boolean(
+    value &&
+      value !== 'undefined' &&
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value)
+  );
+
 export const useEditorStore = create<EditorState>((set, get) => {
-  const isValidUuid = (value: string | null | undefined) =>
-    Boolean(
-      value &&
-        value !== 'undefined' &&
-        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value)
-    );
 
   const performSave = async () => {
     set({ isSaving: true });
@@ -202,18 +204,24 @@ export const useEditorStore = create<EditorState>((set, get) => {
   },
 
   loadPage: (page) => {
-    // Persist currentPageId to localStorage
+    const validPageId = isValidUuid(page.id) ? page.id : null;
+
     if (typeof window !== 'undefined') {
-      localStorage.setItem('currentPageId', page.id);
+      if (validPageId) {
+        localStorage.setItem('currentPageId', validPageId);
+      } else {
+        localStorage.removeItem('currentPageId');
+      }
     }
-    set({
+
+    set((state) => ({
       components: page.components,
       theme: page.theme,
-      currentPageId: page.id,
-      siteId: isValidUuid(page.site_id) ? page.site_id : null,
+      currentPageId: validPageId ?? state.currentPageId,
+      siteId: isValidUuid(page.site_id) ? page.site_id : state.siteId,
       pageName: page.name,
       selectedComponentId: null,
-    });
+    }));
   },
 
   setPageName: (name) => {

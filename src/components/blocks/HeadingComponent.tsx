@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useEditorStore } from '@/store/editor-store';
 
 export type HeadingComponentProps = {
   text: string;
@@ -13,8 +14,9 @@ export const HeadingComponent: React.FC<HeadingComponentProps> = ({
   text,
   level = 'h2',
   alignment = 'left',
-  color = '#1f2937',
+  color,
 }) => {
+  const theme = useEditorStore((state) => state.theme);
   const Tag = level;
 
   const sizeClasses = {
@@ -35,7 +37,10 @@ export const HeadingComponent: React.FC<HeadingComponentProps> = ({
   return (
     <Tag
       className={`${sizeClasses[level]} ${alignmentClasses[alignment]} mb-4`}
-      style={{ color }}
+      style={{
+        color: color || theme.colors.text || '#1f2937',
+        fontFamily: theme.fonts.heading,
+      }}
     >
       {text}
     </Tag>

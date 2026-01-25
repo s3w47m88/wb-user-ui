@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useEditorStore } from '@/store/editor-store';
 
 export type ButtonComponentProps = {
   text: string;
@@ -17,10 +18,20 @@ export const ButtonComponent: React.FC<ButtonComponentProps> = ({
   size = 'md',
   fullWidth = false,
 }) => {
+  const theme = useEditorStore((state) => state.theme);
+  const primaryColor = theme.colors.primary || '#2563eb';
+  const secondaryColor = theme.colors.secondary || '#6b7280';
+
   const variantClasses = {
-    primary: 'bg-blue-600 text-white hover:bg-blue-700',
-    secondary: 'bg-gray-600 text-white hover:bg-gray-700',
-    outline: 'bg-transparent border-2 border-blue-600 text-blue-600 hover:bg-blue-50',
+    primary: 'text-white',
+    secondary: 'text-white',
+    outline: 'bg-transparent border-2',
+  };
+
+  const variantStyles = {
+    primary: { backgroundColor: primaryColor, color: '#ffffff' },
+    secondary: { backgroundColor: secondaryColor, color: '#ffffff' },
+    outline: { borderColor: primaryColor, color: primaryColor, backgroundColor: 'transparent' },
   };
 
   const sizeClasses = {
@@ -33,6 +44,10 @@ export const ButtonComponent: React.FC<ButtonComponentProps> = ({
     <a
       href={link}
       className={`inline-block font-semibold rounded-lg transition-all duration-200 hover:scale-105 shadow-md hover:shadow-lg ${variantClasses[variant]} ${sizeClasses[size]} ${fullWidth ? 'w-full text-center' : ''}`}
+      style={{
+        ...variantStyles[variant],
+        fontFamily: theme.fonts.body,
+      }}
     >
       {text}
     </a>

@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useEditorStore } from '@/store/editor-store';
 
 export type ListComponentProps = {
   items: string[];
@@ -12,9 +13,10 @@ export type ListComponentProps = {
 export const ListComponent: React.FC<ListComponentProps> = ({
   items,
   type = 'bullet',
-  color = '#4b5563',
+  color,
   fontSize = 'base',
 }) => {
+  const theme = useEditorStore((state) => state.theme);
   const Tag = type === 'bullet' ? 'ul' : 'ol';
 
   const sizeClasses = {
@@ -26,7 +28,13 @@ export const ListComponent: React.FC<ListComponentProps> = ({
   const listStyle = type === 'bullet' ? 'list-disc' : 'list-decimal';
 
   return (
-    <Tag className={`${listStyle} ${sizeClasses[fontSize]} space-y-2 pl-6`} style={{ color }}>
+    <Tag
+      className={`${listStyle} ${sizeClasses[fontSize]} space-y-2 pl-6`}
+      style={{
+        color: color || theme.colors.text || '#4b5563',
+        fontFamily: theme.fonts.body,
+      }}
+    >
       {items.map((item, index) => (
         <li key={index}>{item}</li>
       ))}

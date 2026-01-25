@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useEditorStore } from '@/store/editor-store';
 
 export type LinkComponentProps = {
   text: string;
@@ -16,9 +17,10 @@ export const LinkComponent: React.FC<LinkComponentProps> = ({
   url,
   openInNewTab = false,
   underline = true,
-  color = '#3b82f6',
+  color,
   fontSize = 'base',
 }) => {
+  const theme = useEditorStore((state) => state.theme);
   const sizeClasses = {
     sm: 'text-sm',
     base: 'text-base',
@@ -32,7 +34,10 @@ export const LinkComponent: React.FC<LinkComponentProps> = ({
       target={openInNewTab ? '_blank' : '_self'}
       rel={openInNewTab ? 'noopener noreferrer' : undefined}
       className={`${sizeClasses[fontSize]} hover:opacity-80 transition-opacity ${underline ? 'underline' : 'no-underline'}`}
-      style={{ color }}
+      style={{
+        color: color || theme.colors.primary || '#3b82f6',
+        fontFamily: theme.fonts.body,
+      }}
     >
       {text}
     </a>

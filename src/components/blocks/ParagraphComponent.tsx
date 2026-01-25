@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useEditorStore } from '@/store/editor-store';
 
 export type ParagraphComponentProps = {
   text: string;
@@ -13,8 +14,9 @@ export const ParagraphComponent: React.FC<ParagraphComponentProps> = ({
   text,
   alignment = 'left',
   fontSize = 'base',
-  color = '#4b5563',
+  color,
 }) => {
+  const theme = useEditorStore((state) => state.theme);
   const alignmentClasses = {
     left: 'text-left',
     center: 'text-center',
@@ -32,7 +34,10 @@ export const ParagraphComponent: React.FC<ParagraphComponentProps> = ({
   return (
     <p
       className={`${alignmentClasses[alignment]} ${sizeClasses[fontSize]} leading-relaxed`}
-      style={{ color }}
+      style={{
+        color: color || theme.colors.text || '#4b5563',
+        fontFamily: theme.fonts.body,
+      }}
     >
       {text}
     </p>

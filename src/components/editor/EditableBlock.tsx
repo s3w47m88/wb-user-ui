@@ -150,6 +150,8 @@ function renderComponent(
   onTextBlur?: (e: React.FocusEvent) => void
 ) {
   const { type, props } = component;
+  const headingFontFamily = theme?.fonts?.heading || 'inherit';
+  const bodyFontFamily = theme?.fonts?.body || 'inherit';
 
   // Hero Block
   if (type === 'hero') {
@@ -186,7 +188,11 @@ function renderComponent(
                 onTextBlur?.(e);
               }
             }}
-            style={{ outline: editable ? '2px dashed rgba(255,255,255,0.3)' : 'none', cursor: editable ? 'text' : 'default' }}
+            style={{
+              outline: editable ? '2px dashed rgba(255,255,255,0.3)' : 'none',
+              cursor: editable ? 'text' : 'default',
+              fontFamily: headingFontFamily,
+            }}
           >
             {props.title}
           </h1>
@@ -202,7 +208,11 @@ function renderComponent(
                 onTextBlur?.(e);
               }
             }}
-            style={{ outline: editable ? '2px dashed rgba(255,255,255,0.3)' : 'none', cursor: editable ? 'text' : 'default' }}
+            style={{
+              outline: editable ? '2px dashed rgba(255,255,255,0.3)' : 'none',
+              cursor: editable ? 'text' : 'default',
+              fontFamily: bodyFontFamily,
+            }}
           >
             {props.subtitle}
           </p>
@@ -223,7 +233,8 @@ function renderComponent(
               outline: editable ? '2px dashed rgba(255,255,255,0.3)' : 'none',
               cursor: editable ? 'text' : 'default',
               backgroundColor: theme.colors.background || '#ffffff',
-              color: theme.colors.primary || '#3b82f6'
+              color: theme.colors.primary || '#3b82f6',
+              fontFamily: bodyFontFamily,
             }}
           >
             {props.ctaText}
@@ -269,7 +280,11 @@ function renderComponent(
                 onTextBlur?.(e);
               }
             }}
-            style={{ outline: editable ? '2px dashed rgba(255,255,255,0.3)' : 'none', cursor: editable ? 'text' : 'default' }}
+            style={{
+              outline: editable ? '2px dashed rgba(255,255,255,0.3)' : 'none',
+              cursor: editable ? 'text' : 'default',
+              fontFamily: headingFontFamily,
+            }}
           >
             {props.heading}
           </h2>
@@ -285,7 +300,11 @@ function renderComponent(
                 onTextBlur?.(e);
               }
             }}
-            style={{ outline: editable ? '2px dashed rgba(255,255,255,0.3)' : 'none', cursor: editable ? 'text' : 'default' }}
+            style={{
+              outline: editable ? '2px dashed rgba(255,255,255,0.3)' : 'none',
+              cursor: editable ? 'text' : 'default',
+              fontFamily: bodyFontFamily,
+            }}
           >
             {props.description}
           </p>
@@ -306,7 +325,8 @@ function renderComponent(
               outline: editable ? '2px dashed rgba(255,255,255,0.3)' : 'none',
               cursor: editable ? 'text' : 'default',
               backgroundColor: theme.colors.background || '#ffffff',
-              color: theme.colors.primary || '#3b82f6'
+              color: theme.colors.primary || '#3b82f6',
+              fontFamily: bodyFontFamily,
             }}
           >
             {props.buttonText}
@@ -336,7 +356,8 @@ function renderComponent(
             style={{
               outline: editable ? '2px dashed rgba(59, 130, 246, 0.5)' : 'none',
               cursor: editable ? 'text' : 'default',
-              color: theme.colors.text || '#1f2937'
+              color: theme.colors.text || '#1f2937',
+              fontFamily: headingFontFamily,
             }}
           >
             {props.title}
@@ -410,7 +431,8 @@ function renderComponent(
             style={{
               outline: editable ? '2px dashed rgba(59, 130, 246, 0.5)' : 'none',
               cursor: editable ? 'text' : 'default',
-              color: theme.colors.text || '#1f2937'
+              color: theme.colors.text || '#1f2937',
+              fontFamily: bodyFontFamily,
             }}
           />
         </div>
@@ -460,6 +482,7 @@ function renderComponent(
                     style={{
                       outline: editable ? '2px dashed rgba(59, 130, 246, 0.5)' : 'none',
                       cursor: editable ? 'text' : 'default',
+                      fontFamily: headingFontFamily,
                     }}
                   >
                     {props.candidateName}
@@ -479,6 +502,7 @@ function renderComponent(
                     style={{
                       outline: editable ? '2px dashed rgba(59, 130, 246, 0.5)' : 'none',
                       cursor: editable ? 'text' : 'default',
+                      fontFamily: bodyFontFamily,
                     }}
                   >
                     {props.candidateTitle}
@@ -502,6 +526,7 @@ function renderComponent(
                   style={{
                     outline: editable ? '2px dashed rgba(59, 130, 246, 0.5)' : 'none',
                     cursor: editable ? 'text' : 'default',
+                    fontFamily: bodyFontFamily,
                   }}
                 >
                   {props.bio}
@@ -534,6 +559,7 @@ function renderComponent(
             style={{
               outline: editable ? '2px dashed rgba(59, 130, 246, 0.5)' : 'none',
               cursor: editable ? 'text' : 'default',
+              fontFamily: headingFontFamily,
             }}
           >
             {props.title}
@@ -560,6 +586,7 @@ function renderComponent(
                     style={{
                       outline: editable ? '2px dashed rgba(59, 130, 246, 0.5)' : 'none',
                       cursor: editable ? 'text' : 'default',
+                      fontFamily: bodyFontFamily,
                     }}
                   >
                     {article.date}
@@ -581,6 +608,7 @@ function renderComponent(
                     style={{
                       outline: editable ? '2px dashed rgba(59, 130, 246, 0.5)' : 'none',
                       cursor: editable ? 'text' : 'default',
+                      fontFamily: headingFontFamily,
                     }}
                   >
                     {article.headline}
@@ -602,6 +630,7 @@ function renderComponent(
                     style={{
                       outline: editable ? '2px dashed rgba(59, 130, 246, 0.5)' : 'none',
                       cursor: editable ? 'text' : 'default',
+                      fontFamily: bodyFontFamily,
                     }}
                   >
                     {article.excerpt}
@@ -644,6 +673,7 @@ function renderComponent(
                 style={{
                   outline: editable ? '2px dashed rgba(255, 255, 255, 0.3)' : 'none',
                   cursor: editable ? 'text' : 'default',
+                  fontFamily: headingFontFamily,
                 }}
               >
                 {props.companyName}
@@ -663,6 +693,7 @@ function renderComponent(
                 style={{
                   outline: editable ? '2px dashed rgba(255, 255, 255, 0.3)' : 'none',
                   cursor: editable ? 'text' : 'default',
+                  fontFamily: bodyFontFamily,
                 }}
               >
                 {props.tagline}
@@ -671,7 +702,9 @@ function renderComponent(
 
             {/* Links */}
             <div>
-              <h4 className="font-semibold mb-4">Quick Links</h4>
+              <h4 className="font-semibold mb-4" style={{ fontFamily: headingFontFamily }}>
+                Quick Links
+              </h4>
               <ul className="space-y-2">
                 {props.links?.map((link: any, index: number) => (
                   <li key={index}>
@@ -693,6 +726,7 @@ function renderComponent(
                       style={{
                         outline: editable ? '2px dashed rgba(255, 255, 255, 0.3)' : 'none',
                         cursor: editable ? 'text' : 'default',
+                        fontFamily: bodyFontFamily,
                       }}
                     >
                       {link.title}
@@ -704,7 +738,9 @@ function renderComponent(
 
             {/* Social */}
             <div>
-              <h4 className="font-semibold mb-4">Follow Us</h4>
+              <h4 className="font-semibold mb-4" style={{ fontFamily: headingFontFamily }}>
+                Follow Us
+              </h4>
               <div className="flex gap-4">
                 {props.socialLinks?.map((social: any, index: number) => (
                   <a
