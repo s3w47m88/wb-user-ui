@@ -18,6 +18,7 @@ export async function savePage(pageConfig: Omit<PageConfig, 'id' | 'created_at' 
   const { data, error } = await supabaseContent
     .from('pages')
     .insert({
+      site_id: pageConfig.site_id,
       name: pageConfig.name,
       components: pageConfig.components,
       theme: pageConfig.theme,
@@ -47,6 +48,7 @@ export async function updatePage(id: string, pageConfig: Partial<PageConfig>) {
   const { data, error } = await supabaseContent
     .from('pages')
     .update({
+      site_id: pageConfig.site_id,
       name: pageConfig.name,
       components: pageConfig.components,
       theme: pageConfig.theme,

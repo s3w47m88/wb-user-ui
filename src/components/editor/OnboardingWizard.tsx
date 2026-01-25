@@ -40,6 +40,9 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ isOpen, onCo
     if (selectedTemplate) {
       const siteName = formData.siteName.trim() || selectedTemplate.name;
       const siteDomain = formData.useTemporaryDomain ? null : formData.domain.trim();
+      const siteId = typeof crypto !== 'undefined' && 'randomUUID' in crypto
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
       // Apply form data to selected template
       const customizedTemplate = {
@@ -51,6 +54,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ isOpen, onCo
         // Save to database first
         const { savePage } = await import('@/lib/page-service');
         const savedPage = await savePage({
+          site_id: siteId,
           name: siteName || 'My Site',
           components: customizedTemplate.components,
           theme: customizedTemplate.theme,

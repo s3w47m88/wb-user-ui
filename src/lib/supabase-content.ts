@@ -7,6 +7,7 @@ export const supabaseContent = createClient(supabaseUrl, supabaseKey);
 
 export type PageConfig = {
   id: string;
+  site_id?: string;
   name: string;
   components: ComponentData[];
   theme: ThemeConfig;
