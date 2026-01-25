@@ -220,9 +220,9 @@ export async function getCurrentUserProfile(): Promise<UserProfile | null> {
  */
 export async function getUserOrganizations(): Promise<Organization[]> {
   try {
-    const { data: { user } } = await supabaseControl.auth.getUser();
+    const { data: { user }, error: userError } = await supabaseControl.auth.getUser();
 
-    if (!user) return [];
+    if (userError || !user) return [];
 
     const { data, error } = await supabaseControl
       .from('organization_members')
@@ -230,6 +230,9 @@ export async function getUserOrganizations(): Promise<Organization[]> {
       .eq('user_id', user.id);
 
     if (error) {
+      if (error.code === 'PGRST301' || error.status === 401 || /JWT/i.test(error.message)) {
+        return [];
+      }
       console.error('Failed to get organizations:', error);
       return [];
     }
