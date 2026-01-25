@@ -77,10 +77,17 @@ export const OrganizationSelector: React.FC<OrganizationSelectorProps> = ({ onSe
         return;
       }
 
+      const orgSlug = orgName
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-|-$)/g, '') || 'organization';
+
       const { data: orgData, error: orgError } = await supabaseControl
         .from('organizations')
         .insert({
           name: orgName.trim(),
+          slug: orgSlug,
           company_email: orgEmail.trim() || null,
           company_phone: orgPhone.trim() || null,
           created_by: user.id,

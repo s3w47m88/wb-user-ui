@@ -229,8 +229,12 @@ export async function getUserOrganizations(): Promise<Organization[]> {
       .select('organization_id, organizations(*)')
       .eq('user_id', user.id);
 
-    if (error || !data) {
+    if (error) {
       console.error('Failed to get organizations:', error);
+      return [];
+    }
+
+    if (!data) {
       return [];
     }
 
