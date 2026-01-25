@@ -8,6 +8,7 @@ type EditorState = {
   theme: ThemeConfig;
   isEditing: boolean;
   currentPageId: string | null;
+  siteId: string | null;
   pageName: string;
   autoSaveTimeout: NodeJS.Timeout | null;
   isSaving: boolean;
@@ -25,6 +26,7 @@ type EditorState = {
   setPageName: (name: string) => void;
   setCurrentPageId: (id: string | null) => void;
   triggerAutoSave: () => void;
+  saveNow: () => void;
 };
 
 const defaultTheme: ThemeConfig = {
@@ -50,15 +52,68 @@ const getInitialPageId = (): string | null => {
   return null;
 };
 
-export const useEditorStore = create<EditorState>((set, get) => ({
-  components: [],
-  selectedComponentId: null,
-  theme: defaultTheme,
-  isEditing: true,
-  currentPageId: getInitialPageId(),
-  pageName: 'Untitled Page',
-  autoSaveTimeout: null,
-  isSaving: false,
+export const useEditorStore = create<EditorState>((set, get) => {
+  const isValidUuid = (value: string | null | undefined) =>
+    Boolean(
+      value &&
+        value !== 'undefined' &&
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value)
+    );
+
+  const performSave = async () => {
+    set({ isSaving: true });
+    const { components, theme, pageName, currentPageId, siteId } = get();
+
+    try {
+      const pageData = {
+        name: pageName,
+        components,
+        theme,
+        ...(isValidUuid(siteId) ? { site_id: siteId } : {}),
+      };
+
+      if (currentPageId) {
+        try {
+          await updatePage(currentPageId, pageData);
+          console.log('Auto-saved successfully');
+        } catch (updateError: any) {
+          console.error('Failed to update page, trying to create new:', updateError);
+          if (updateError?.code === 'NOT_FOUND') {
+            const savedPage = await savePage(pageData);
+            set({
+              currentPageId: savedPage.id,
+              siteId: isValidUuid(savedPage.site_id) ? savedPage.site_id : null,
+            });
+            console.log('Page created and auto-saved');
+          } else {
+            throw updateError;
+          }
+        }
+      } else {
+        const savedPage = await savePage(pageData);
+        set({
+          currentPageId: savedPage.id,
+          siteId: isValidUuid(savedPage.site_id) ? savedPage.site_id : null,
+        });
+        console.log('Page created and auto-saved');
+      }
+    } catch (error) {
+      console.error('Auto-save failed:', error);
+    } finally {
+      set({ isSaving: false });
+    }
+  };
+
+  return {
+    components: [],
+    selectedComponentId: null,
+    theme: defaultTheme,
+    isEditing: true,
+    currentPageId: getInitialPageId(),
+    siteId: null,
+    pageName: 'Untitled Page',
+    autoSaveTimeout: null,
+    isSaving: false,
 
   addComponent: (type, props) =>
     set((state) => {
@@ -141,6 +196,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       theme: defaultTheme,
       isEditing: false,
       currentPageId: null,
+      siteId: null,
       pageName: 'Untitled Page',
     });
   },
@@ -154,6 +210,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       components: page.components,
       theme: page.theme,
       currentPageId: page.id,
+      siteId: isValidUuid(page.site_id) ? page.site_id : null,
       pageName: page.name,
       selectedComponentId: null,
     });
@@ -166,45 +223,27 @@ export const useEditorStore = create<EditorState>((set, get) => ({
 
   setCurrentPageId: (id) => set({ currentPageId: id }),
 
-  triggerAutoSave: () => {
-    const state = get();
+    triggerAutoSave: () => {
+      const state = get();
 
-    // Clear existing timeout
-    if (state.autoSaveTimeout) {
-      clearTimeout(state.autoSaveTimeout);
-    }
-
-    // Set new timeout for auto-save (2 seconds after last change)
-    const timeout = setTimeout(async () => {
-      set({ isSaving: true });
-      const { components, theme, pageName, currentPageId } = get();
-
-      try {
-        const pageData = { name: pageName, components, theme };
-
-        if (currentPageId) {
-          try {
-            await updatePage(currentPageId, pageData);
-            console.log('Auto-saved successfully');
-          } catch (updateError: any) {
-            console.error('Failed to update page, trying to create new:', updateError);
-            // If update fails, the page might not exist - try creating it
-            const savedPage = await savePage(pageData);
-            set({ currentPageId: savedPage.id });
-            console.log('Page created and auto-saved');
-          }
-        } else {
-          const savedPage = await savePage(pageData);
-          set({ currentPageId: savedPage.id });
-          console.log('Page created and auto-saved');
-        }
-      } catch (error) {
-        console.error('Auto-save failed:', error);
-      } finally {
-        set({ isSaving: false });
+      if (state.autoSaveTimeout) {
+        clearTimeout(state.autoSaveTimeout);
       }
-    }, 2000);
 
-    set({ autoSaveTimeout: timeout });
-  },
-}));
+      const timeout = setTimeout(() => {
+        void performSave();
+      }, 2000);
+
+      set({ autoSaveTimeout: timeout });
+    },
+
+    saveNow: () => {
+      const state = get();
+      if (state.autoSaveTimeout) {
+        clearTimeout(state.autoSaveTimeout);
+        set({ autoSaveTimeout: null });
+      }
+      void performSave();
+    },
+  };
+});

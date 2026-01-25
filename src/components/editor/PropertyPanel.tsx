@@ -7,7 +7,7 @@ import { X, Wand2 } from 'lucide-react';
 import { ImageGenerator } from './ImageGenerator';
 
 export const PropertyPanel: React.FC = () => {
-  const { selectedComponentId, components, updateComponent, selectComponent } = useEditorStore();
+  const { selectedComponentId, components, updateComponent, selectComponent, saveNow } = useEditorStore();
   const [showImageGenerator, setShowImageGenerator] = useState(false);
   const [currentImageProp, setCurrentImageProp] = useState<string | null>(null);
 
@@ -62,6 +62,7 @@ export const PropertyPanel: React.FC = () => {
                 type="text"
                 value={selectedComponent.props[key] || ''}
                 onChange={(e) => handlePropertyChange(key, e.target.value)}
+                onBlur={saveNow}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             )}
@@ -70,6 +71,7 @@ export const PropertyPanel: React.FC = () => {
               <textarea
                 value={selectedComponent.props[key] || ''}
                 onChange={(e) => handlePropertyChange(key, e.target.value)}
+                onBlur={saveNow}
                 rows={6}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
               />
@@ -80,6 +82,7 @@ export const PropertyPanel: React.FC = () => {
                 type="number"
                 value={selectedComponent.props[key] || ''}
                 onChange={(e) => handlePropertyChange(key, parseInt(e.target.value))}
+                onBlur={saveNow}
                 min={schema.min}
                 max={schema.max}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -92,12 +95,14 @@ export const PropertyPanel: React.FC = () => {
                   type="color"
                   value={selectedComponent.props[key] || '#000000'}
                   onChange={(e) => handlePropertyChange(key, e.target.value)}
+                  onBlur={saveNow}
                   className="w-16 h-10 border border-gray-300 rounded cursor-pointer"
                 />
                 <input
                   type="text"
                   value={selectedComponent.props[key] || ''}
                   onChange={(e) => handlePropertyChange(key, e.target.value)}
+                  onBlur={saveNow}
                   placeholder="#000000"
                   className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
@@ -108,6 +113,7 @@ export const PropertyPanel: React.FC = () => {
               <select
                 value={selectedComponent.props[key] || ''}
                 onChange={(e) => handlePropertyChange(key, e.target.value)}
+                onBlur={saveNow}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 {schema.options.map((option: string) => (
@@ -124,6 +130,7 @@ export const PropertyPanel: React.FC = () => {
                   type="text"
                   value={selectedComponent.props[key] || ''}
                   onChange={(e) => handlePropertyChange(key, e.target.value)}
+                  onBlur={saveNow}
                   placeholder="Image URL"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />

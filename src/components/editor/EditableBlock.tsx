@@ -21,7 +21,7 @@ export const EditableBlock: React.FC<EditableBlockProps> = ({ component, disable
     disabled,
   });
 
-  const { updateComponent, removeComponent, theme } = useEditorStore();
+  const { updateComponent, removeComponent, theme, saveNow } = useEditorStore();
   const [isEditing, setIsEditing] = useState(false);
   const [showImageUploader, setShowImageUploader] = useState(false);
   const [showTextToolbar, setShowTextToolbar] = useState(false);
@@ -63,6 +63,8 @@ export const EditableBlock: React.FC<EditableBlockProps> = ({ component, disable
     if (relatedTarget?.closest('.floating-text-toolbar')) {
       return;
     }
+
+    saveNow();
 
     // Delay hiding to allow toolbar interactions
     setTimeout(() => {
