@@ -8,6 +8,15 @@ function getSelectedOrganizationId(): string | null {
   return localStorage.getItem('selectedOrganizationId');
 }
 
+function slugify(value: string): string {
+  const slug = value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)+/g, '');
+  return slug || `page-${Date.now().toString(36)}`;
+}
+
 export async function savePage(pageConfig: Omit<PageConfig, 'id' | 'created_at' | 'updated_at'>) {
   const organizationId = getSelectedOrganizationId();
 
@@ -15,11 +24,15 @@ export async function savePage(pageConfig: Omit<PageConfig, 'id' | 'created_at' 
     throw new Error('No organization selected. Please select an organization first.');
   }
 
+  const slug = pageConfig.slug?.trim() || slugify(pageConfig.name || 'page');
+
   const { data, error } = await supabaseContent
     .from('pages')
     .insert({
       site_id: pageConfig.site_id,
       name: pageConfig.name,
+      title: pageConfig.name,
+      slug,
       components: pageConfig.components,
       theme: pageConfig.theme,
       organization_id: organizationId,
@@ -50,6 +63,7 @@ export async function updatePage(id: string, pageConfig: Partial<PageConfig>) {
     .update({
       site_id: pageConfig.site_id,
       name: pageConfig.name,
+      title: pageConfig.name,
       components: pageConfig.components,
       theme: pageConfig.theme,
       site_domain: pageConfig.site_domain,

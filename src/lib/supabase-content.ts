@@ -9,6 +9,8 @@ export type PageConfig = {
   id: string;
   site_id?: string;
   name: string;
+  title?: string;
+  slug?: string;
   components: ComponentData[];
   theme: ThemeConfig;
   organization_id?: string;
