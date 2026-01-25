@@ -14,8 +14,6 @@ export const OrganizationSelector: React.FC<OrganizationSelectorProps> = ({ onSe
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [orgName, setOrgName] = useState('');
-  const [orgEmail, setOrgEmail] = useState('');
-  const [orgPhone, setOrgPhone] = useState('');
   const [creatingOrg, setCreatingOrg] = useState(false);
 
   useEffect(() => {
@@ -88,8 +86,6 @@ export const OrganizationSelector: React.FC<OrganizationSelectorProps> = ({ onSe
         .insert({
           name: orgName.trim(),
           slug: orgSlug,
-          company_email: orgEmail.trim() || null,
-          company_phone: orgPhone.trim() || null,
           created_by: user.id,
         })
         .select()
@@ -168,29 +164,6 @@ export const OrganizationSelector: React.FC<OrganizationSelectorProps> = ({ onSe
               value={orgName}
               onChange={(e) => setOrgName(e.target.value)}
               placeholder="The Portland Company"
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-transparent"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Company Email (optional)
-            </label>
-            <input
-              type="email"
-              value={orgEmail}
-              onChange={(e) => setOrgEmail(e.target.value)}
-              placeholder="team@example.com"
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-transparent"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Company Phone (optional)
-            </label>
-            <input
-              value={orgPhone}
-              onChange={(e) => setOrgPhone(e.target.value)}
-              placeholder="(555) 555-1234"
               className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-transparent"
             />
           </div>
