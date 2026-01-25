@@ -64,7 +64,10 @@ export const LoginForm: React.FC<LoginFormProps> = ({
 
   return (
     <div className="w-full max-w-md mx-auto p-6 bg-white rounded-lg shadow-lg">
-      <h2 className="text-2xl font-bold text-gray-900 mb-6">Sign In</h2>
+      <div className="mb-6 text-center">
+        <p className="text-sm font-semibold uppercase tracking-[0.2em] text-red-600">Website Builder</p>
+        <h2 className="text-2xl font-bold text-gray-900 mt-2">Sign In</h2>
+      </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Error Message */}
