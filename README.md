@@ -93,6 +93,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 ### Railway Deployment
 
 This repo currently hosts the User UI Server. The full multi-service plan is defined in `docs/infrastructure.md`.
+Deployed service: https://railway.com/project/b63cf75f-49b9-418f-97d5-ea9b8f21755d/service/f9949045-28ca-44a4-9314-f0e309d6bae1?environmentId=cab149f1-da97-4d7b-a966-f4f05af454d9
 
 1. Install Railway CLI:
 \`\`\`bash
