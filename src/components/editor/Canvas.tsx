@@ -1,6 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
+import { DndContext, DragEndEvent, closestCenter } from '@dnd-kit/core';
+import { SortableContext, arrayMove, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { Plus } from 'lucide-react';
 import { EditableBlock } from './EditableBlock';
 import { ComponentPicker } from './ComponentPicker';
@@ -56,7 +58,24 @@ export const Canvas: React.FC = () => {
   }
 
   // Editing mode
-  const sortedComponents = [...components].sort((a, b) => a.order - b.order);
+  const sortedComponents = useMemo(
+    () => [...components].sort((a, b) => a.order - b.order),
+    [components]
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = sortedComponents.findIndex((comp) => comp.id === active.id);
+    const newIndex = sortedComponents.findIndex((comp) => comp.id === over.id);
+    if (oldIndex < 0 || newIndex < 0) return;
+
+    const reorderedComponents = arrayMove(sortedComponents, oldIndex, newIndex).map(
+      (comp, index) => ({ ...comp, order: index })
+    );
+    reorderComponents(reorderedComponents);
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -74,18 +93,25 @@ export const Canvas: React.FC = () => {
           </button>
         </div>
       ) : (
-        <div>
-          {/* Add section divider at top */}
-          <SectionDivider onClick={() => handleAddSectionClick(0)} />
+        <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext
+            items={sortedComponents.map((component) => component.id)}
+            strategy={verticalListSortingStrategy}
+          >
+            <div>
+              {/* Add section divider at top */}
+              <SectionDivider onClick={() => handleAddSectionClick(0)} />
 
-          {/* Existing sections with dividers between */}
-          {sortedComponents.map((component, index) => (
-            <React.Fragment key={component.id}>
-              <EditableBlock component={component} />
-              <SectionDivider onClick={() => handleAddSectionClick(index + 1)} />
-            </React.Fragment>
-          ))}
-        </div>
+              {/* Existing sections with dividers between */}
+              {sortedComponents.map((component, index) => (
+                <React.Fragment key={component.id}>
+                  <EditableBlock component={component} />
+                  <SectionDivider onClick={() => handleAddSectionClick(index + 1)} />
+                </React.Fragment>
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
       )}
 
       {/* Section Picker Modal */}
