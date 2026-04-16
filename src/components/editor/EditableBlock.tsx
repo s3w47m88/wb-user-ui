@@ -6,6 +6,14 @@ import { CSS } from "@dnd-kit/utilities";
 import { ComponentData, ThemeConfig } from "@/lib/supabase-content";
 import { useEditorStore } from "@/store/editor-store";
 import {
+  createLayoutEditor,
+  getElementLayouts,
+  LayoutEditorApi,
+  ElementPosition,
+  SNAP_GRID_SIZE,
+  snapPosition,
+} from "@/lib/element-layouts";
+import {
   GripVertical,
   Trash2,
   Image as ImageIcon,
@@ -25,21 +33,6 @@ import { GridCell } from "@/components/blocks/GridBlock";
 type EditableBlockProps = {
   component: ComponentData;
   disabled?: boolean;
-};
-
-type ElementPosition = {
-  x: number;
-  y: number;
-};
-
-type LayoutEditorApi = {
-  editable: boolean;
-  selectedKey: string | null;
-  isComponentSelected: boolean;
-  getLayout: (elementKey: string) => ElementPosition;
-  selectKey: (elementKey: string | null) => void;
-  commitLayout: (elementKey: string, position: ElementPosition) => void;
-  save: () => void;
 };
 
 type GalleryImage = {
@@ -73,8 +66,6 @@ type AlignmentCommand =
   | "middle"
   | "bottom";
 
-const SNAP_GRID_SIZE = 16;
-
 const ALIGNMENT_BUTTONS: Array<{
   command: AlignmentCommand;
   label: string;
@@ -87,18 +78,6 @@ const ALIGNMENT_BUTTONS: Array<{
   { command: "middle", label: "Align middle", icon: AlignCenterVertical },
   { command: "bottom", label: "Align bottom", icon: AlignEndVertical },
 ];
-
-const snapPosition = (value: number) =>
-  Math.round(value / SNAP_GRID_SIZE) * SNAP_GRID_SIZE;
-
-const getElementLayouts = (
-  props: Record<string, unknown>,
-): Record<string, Partial<ElementPosition>> => {
-  const value = props.elementLayouts;
-  return value && typeof value === "object" && !Array.isArray(value)
-    ? (value as Record<string, Partial<ElementPosition>>)
-    : {};
-};
 
 const SectionSnapGrid: React.FC<{ visible: boolean }> = ({ visible }) => {
   if (!visible) {
@@ -407,16 +386,6 @@ export const EditableBlock: React.FC<EditableBlockProps> = ({
     }, 150);
   };
 
-  const getElementLayout = (elementKey: string): ElementPosition => {
-    const elementLayouts = getElementLayouts(component.props);
-    const layout = elementLayouts[elementKey];
-
-    return {
-      x: typeof layout?.x === "number" ? layout.x : 0,
-      y: typeof layout?.y === "number" ? layout.y : 0,
-    };
-  };
-
   const commitElementLayout = (
     elementKey: string,
     position: ElementPosition,
@@ -433,20 +402,18 @@ export const EditableBlock: React.FC<EditableBlockProps> = ({
     });
   };
 
-  const layoutEditor: LayoutEditorApi | undefined = disabled
-    ? undefined
-    : {
-        editable: true,
-        selectedKey: visibleSelectedElementKey,
-        isComponentSelected,
-        getLayout: getElementLayout,
-        selectKey: (elementKey) => {
-          selectComponent(component.id);
-          setSelectedElementKey(elementKey);
-        },
-        commitLayout: commitElementLayout,
-        save: saveNow,
-      };
+  const layoutEditor: LayoutEditorApi = createLayoutEditor({
+    props: component.props,
+    editable: !disabled,
+    selectedKey: visibleSelectedElementKey,
+    isComponentSelected,
+    onSelect: (elementKey) => {
+      selectComponent(component.id);
+      setSelectedElementKey(elementKey);
+    },
+    onCommit: commitElementLayout,
+    onSave: saveNow,
+  });
 
   if (disabled) {
     return (
@@ -461,7 +428,7 @@ export const EditableBlock: React.FC<EditableBlockProps> = ({
           undefined,
           undefined,
           undefined,
-          undefined,
+          layoutEditor,
         )}
         <ImageUploader
           isOpen={showImageUploader}
