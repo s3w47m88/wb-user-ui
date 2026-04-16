@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { CheckCircle, Eye, Globe, Link2, ChevronRight } from 'lucide-react';
-import { useEditorStore } from '@/store/editor-store';
-import { pageTemplates, PageTemplate } from '@/lib/templates';
-import { Canvas } from './Canvas';
+import React, { useState } from "react";
+import { CheckCircle, Eye, Globe, Link2, ChevronRight } from "lucide-react";
+import { useEditorStore } from "@/store/editor-store";
+import { pageTemplates, PageTemplate } from "@/lib/templates";
+import { Canvas } from "./Canvas";
 
 type OnboardingWizardProps = {
   isOpen: boolean;
@@ -17,19 +17,26 @@ type FormData = {
   useTemporaryDomain: boolean;
 };
 
-export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ isOpen, onComplete }) => {
+export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
+  isOpen,
+  onComplete,
+}) => {
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState<FormData>({
-    siteName: '',
-    domain: '',
+    siteName: "",
+    domain: "",
     useTemporaryDomain: true,
   });
-  const [selectedTemplate, setSelectedTemplate] = useState<PageTemplate | null>(null);
-  const [previewTemplate, setPreviewTemplate] = useState<PageTemplate | null>(null);
-  const { loadPage: loadPageToStore, setPageName } = useEditorStore();
+  const [selectedTemplate, setSelectedTemplate] = useState<PageTemplate | null>(
+    null,
+  );
+  const [previewTemplate, setPreviewTemplate] = useState<PageTemplate | null>(
+    null,
+  );
+  const { loadPage: loadPageToStore } = useEditorStore();
 
   const updateFormData = (key: keyof FormData, value: string | boolean) => {
-    setFormData(prev => ({ ...prev, [key]: value }));
+    setFormData((prev) => ({ ...prev, [key]: value }));
   };
 
   const handleTemplateSelect = (template: PageTemplate) => {
@@ -39,10 +46,9 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ isOpen, onCo
   const handleComplete = async () => {
     if (selectedTemplate) {
       const siteName = formData.siteName.trim() || selectedTemplate.name;
-      const siteDomain = formData.useTemporaryDomain ? null : formData.domain.trim();
-      const siteId = typeof crypto !== 'undefined' && 'randomUUID' in crypto
-        ? crypto.randomUUID()
-        : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+      const siteDomain = formData.useTemporaryDomain
+        ? null
+        : formData.domain.trim();
 
       // Apply form data to selected template
       const customizedTemplate = {
@@ -52,10 +58,9 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ isOpen, onCo
 
       try {
         // Save to database first
-        const { savePage } = await import('@/lib/page-service');
+        const { savePage } = await import("@/lib/page-service");
         const savedPage = await savePage({
-          site_id: siteId,
-          name: siteName || 'My Site',
+          name: siteName || "My Site",
           components: customizedTemplate.components,
           theme: customizedTemplate.theme,
           site_domain: siteDomain || undefined,
@@ -64,10 +69,9 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ isOpen, onCo
 
         // Then load into store
         loadPageToStore(savedPage);
-        setPageName(savedPage.name);
       } catch (error) {
-        console.error('Failed to create site:', error);
-        alert('Failed to create site. Please try again.');
+        console.error("Failed to create site:", error);
+        alert("Failed to create site. Please try again.");
         return;
       }
     }
@@ -109,7 +113,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ isOpen, onCo
               <div
                 key={index}
                 className={`h-1.5 flex-1 rounded-full transition-colors ${
-                  index <= currentStep ? 'bg-red-600' : 'bg-gray-200'
+                  index <= currentStep ? "bg-red-600" : "bg-gray-200"
                 }`}
               />
             ))}
@@ -122,16 +126,22 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ isOpen, onCo
           {currentStep === 0 && (
             <div className="space-y-6">
               <div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">Create Your First Site</h2>
-                <p className="text-gray-600">Give your site a name and choose a domain.</p>
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                  Create Your First Site
+                </h2>
+                <p className="text-gray-600">
+                  Give your site a name and choose a domain.
+                </p>
               </div>
 
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Site Name</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Site Name
+                  </label>
                   <input
                     value={formData.siteName}
-                    onChange={(e) => updateFormData('siteName', e.target.value)}
+                    onChange={(e) => updateFormData("siteName", e.target.value)}
                     placeholder="Example: The Portland Company"
                     className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-transparent"
                   />
@@ -143,14 +153,20 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ isOpen, onCo
                       type="radio"
                       id="temp-domain"
                       checked={formData.useTemporaryDomain}
-                      onChange={() => updateFormData('useTemporaryDomain', true)}
+                      onChange={() =>
+                        updateFormData("useTemporaryDomain", true)
+                      }
                     />
                     <label htmlFor="temp-domain" className="flex-1">
                       <div className="flex items-center gap-2">
                         <Globe className="w-4 h-4 text-gray-500" />
-                        <span className="font-medium text-gray-900">I don't have one yet</span>
+                        <span className="font-medium text-gray-900">
+                          I don&apos;t have one yet
+                        </span>
                       </div>
-                      <p className="text-sm text-gray-600">Create a temporary domain for me.</p>
+                      <p className="text-sm text-gray-600">
+                        Create a temporary domain for me.
+                      </p>
                     </label>
                   </div>
                   <div className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg">
@@ -158,24 +174,32 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ isOpen, onCo
                       type="radio"
                       id="custom-domain"
                       checked={!formData.useTemporaryDomain}
-                      onChange={() => updateFormData('useTemporaryDomain', false)}
+                      onChange={() =>
+                        updateFormData("useTemporaryDomain", false)
+                      }
                     />
                     <label htmlFor="custom-domain" className="flex-1">
                       <div className="flex items-center gap-2">
                         <Link2 className="w-4 h-4 text-gray-500" />
-                        <span className="font-medium text-gray-900">I have a domain</span>
+                        <span className="font-medium text-gray-900">
+                          I have a domain
+                        </span>
                       </div>
-                      <p className="text-sm text-gray-600">I want to use my custom domain.</p>
+                      <p className="text-sm text-gray-600">
+                        I want to use my custom domain.
+                      </p>
                     </label>
                   </div>
                 </div>
 
                 {!formData.useTemporaryDomain && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Domain</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Domain
+                    </label>
                     <input
                       value={formData.domain}
-                      onChange={(e) => updateFormData('domain', e.target.value)}
+                      onChange={(e) => updateFormData("domain", e.target.value)}
                       placeholder="yourdomain.com"
                       className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-transparent"
                     />
@@ -189,8 +213,12 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ isOpen, onCo
           {currentStep === 1 && (
             <div className="space-y-6">
               <div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">Choose a Template Theme</h2>
-                <p className="text-gray-600">Pick from the two available themes.</p>
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                  Choose a Template Theme
+                </h2>
+                <p className="text-gray-600">
+                  Pick from the two available themes.
+                </p>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 {filteredTemplates.map((template) => (
@@ -198,8 +226,8 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ isOpen, onCo
                     key={template.id}
                     className={`border-2 rounded-lg overflow-hidden transition-all ${
                       selectedTemplate?.id === template.id
-                        ? 'border-red-600 bg-red-50'
-                        : 'border-gray-200 hover:border-red-300'
+                        ? "border-red-600 bg-red-50"
+                        : "border-gray-200 hover:border-red-300"
                     }`}
                   >
                     <button
@@ -209,12 +237,14 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ isOpen, onCo
                       <div
                         className="aspect-video bg-cover bg-center"
                         style={{
-                          backgroundImage: `url(${template.thumbnail})`
+                          backgroundImage: `url(${template.thumbnail})`,
                         }}
                       />
                       <div className="p-4">
                         <h4 className="font-semibold mb-1">{template.name}</h4>
-                        <p className="text-xs text-gray-600">{template.description}</p>
+                        <p className="text-xs text-gray-600">
+                          {template.description}
+                        </p>
                         {selectedTemplate?.id === template.id && (
                           <div className="mt-2 flex items-center gap-1 text-red-600 text-sm font-medium">
                             <CheckCircle size={16} />
@@ -248,8 +278,8 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ isOpen, onCo
               disabled={currentStep === 0}
               className={`px-4 py-2 text-sm font-medium transition-colors ${
                 currentStep === 0
-                  ? 'text-gray-400 cursor-not-allowed'
-                  : 'text-gray-700 hover:text-gray-900'
+                  ? "text-gray-400 cursor-not-allowed"
+                  : "text-gray-700 hover:text-gray-900"
               }`}
             >
               Back
@@ -262,8 +292,8 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ isOpen, onCo
               disabled={!canProceed()}
               className={`flex items-center gap-2 px-6 py-2 rounded-lg font-medium transition-colors ${
                 canProceed()
-                  ? 'bg-red-600 text-white hover:bg-red-700'
-                  : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                  ? "bg-red-600 text-white hover:bg-red-700"
+                  : "bg-gray-200 text-gray-400 cursor-not-allowed"
               }`}
             >
               {isLastStep ? (
@@ -289,7 +319,9 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ isOpen, onCo
             <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
               <div>
                 <h2 className="text-xl font-bold">{previewTemplate.name}</h2>
-                <p className="text-sm text-gray-600">{previewTemplate.description}</p>
+                <p className="text-sm text-gray-600">
+                  {previewTemplate.description}
+                </p>
               </div>
               <div className="flex items-center gap-3">
                 <button
@@ -320,7 +352,9 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ isOpen, onCo
 };
 
 // Template Preview Component
-const TemplatePreview: React.FC<{ template: PageTemplate }> = ({ template }) => {
+const TemplatePreview: React.FC<{ template: PageTemplate }> = ({
+  template,
+}) => {
   const { loadPage: loadPageToStore } = useEditorStore();
 
   // Temporarily load the template for preview
@@ -333,7 +367,7 @@ const TemplatePreview: React.FC<{ template: PageTemplate }> = ({ template }) => 
     };
 
     loadPageToStore({
-      id: 'preview',
+      id: "preview",
       name: template.name,
       components: template.components,
       theme: template.theme,
@@ -341,7 +375,7 @@ const TemplatePreview: React.FC<{ template: PageTemplate }> = ({ template }) => 
 
     return () => {
       loadPageToStore({
-        id: 'preview',
+        id: "preview",
         name: restoreState.pageName,
         components: restoreState.components,
         theme: restoreState.theme,

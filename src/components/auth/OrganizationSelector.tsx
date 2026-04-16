@@ -1,41 +1,42 @@
-'use client';
+"use client";
 
-import React, { useEffect, useState } from 'react';
-import { supabaseControl } from '@/lib/supabase-control';
-import { getUserOrganizations, Organization } from '@/lib/auth-service';
-import { Loader2, Building2 } from 'lucide-react';
+import React, { useEffect, useEffectEvent, useState } from "react";
+import { supabaseControl } from "@/lib/supabase-control";
+import { getUserOrganizations, Organization } from "@/lib/auth-service";
+import { formatSupabaseClientError } from "@/lib/supabase-errors";
+import { Loader2, Building2 } from "lucide-react";
 
 type OrganizationSelectorProps = {
   onSelect: (organizationId: string) => void;
 };
 
-export const OrganizationSelector: React.FC<OrganizationSelectorProps> = ({ onSelect }) => {
+export const OrganizationSelector: React.FC<OrganizationSelectorProps> = ({
+  onSelect,
+}) => {
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [orgName, setOrgName] = useState('');
+  const [error, setError] = useState("");
+  const [orgName, setOrgName] = useState("");
   const [creatingOrg, setCreatingOrg] = useState(false);
 
-  useEffect(() => {
-    loadOrganizations();
-  }, []);
-
-  const loadOrganizations = async () => {
+  const loadOrganizations = useEffectEvent(async () => {
     setLoading(true);
-    setError('');
+    setError("");
 
     try {
       // Check if user email is confirmed first
-      const { data: { user } } = await supabaseControl.auth.getUser();
+      const {
+        data: { user },
+      } = await supabaseControl.auth.getUser();
 
       if (!user) {
-        setError('No user found. Please sign in.');
+        setError("No user found. Please sign in.");
         setLoading(false);
         return;
       }
 
       if (!user.email_confirmed_at) {
-        setError('Please confirm your email address before continuing.');
+        setError("Please confirm your email address before continuing.");
         setLoading(false);
         return;
       }
@@ -51,65 +52,62 @@ export const OrganizationSelector: React.FC<OrganizationSelectorProps> = ({ onSe
         setOrganizations(orgs);
       }
     } catch (err) {
-      setError('Failed to load organizations');
-      console.error('Load organizations error:', err);
+      setError(formatSupabaseClientError(err, "Failed to load organizations"));
+      console.error("Load organizations error:", err);
     } finally {
       setLoading(false);
     }
-  };
+  });
+
+  useEffect(() => {
+    void loadOrganizations();
+  }, []);
 
   const handleCreateOrganization = async () => {
     if (!orgName.trim()) {
-      setError('Organization name is required.');
+      setError("Organization name is required.");
       return;
     }
 
     setCreatingOrg(true);
-    setError('');
+    setError("");
 
     try {
-      const { data: { user } } = await supabaseControl.auth.getUser();
+      const {
+        data: { session },
+      } = await supabaseControl.auth.getSession();
 
-      if (!user) {
-        setError('No user found. Please sign in.');
+      if (!session?.user || !session.access_token) {
+        setError("No user found. Please sign in.");
         return;
       }
 
-      const orgSlug = orgName
-        .trim()
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/(^-|-$)/g, '') || 'organization';
-
-      const { data: orgData, error: orgError } = await supabaseControl
-        .from('organizations')
-        .insert({
+      const response = await fetch("/api/organizations", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
           name: orgName.trim(),
-          slug: orgSlug,
-          created_by: user.id,
-        })
-        .select()
-        .single();
+        }),
+      });
 
-      if (orgError || !orgData) {
-        throw orgError || new Error('Failed to create organization.');
+      const result = await response.json();
+
+      if (!response.ok || !result.success || !result.organization) {
+        throw new Error(result.error || "Failed to create organization.");
       }
 
-      const { error: memberError } = await supabaseControl
-        .from('organization_members')
-        .insert({
-          organization_id: orgData.id,
-          user_id: user.id,
-        });
-
-      if (memberError) {
-        throw memberError;
-      }
-
-      onSelect(orgData.id);
+      onSelect(result.organization.id);
     } catch (err) {
-      console.error('Create organization error:', err);
-      setError('Failed to create organization. Please try again.');
+      console.error("Create organization error:", err);
+      setError(
+        formatSupabaseClientError(
+          err,
+          "Failed to create organization. Please try again.",
+        ),
+      );
     } finally {
       setCreatingOrg(false);
     }
@@ -144,8 +142,12 @@ export const OrganizationSelector: React.FC<OrganizationSelectorProps> = ({ onSe
             <Building2 size={20} className="text-red-600" />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-gray-900">Create Your First Organization</h2>
-            <p className="text-sm text-gray-600">Set up your organization to get started.</p>
+            <h2 className="text-xl font-bold text-gray-900">
+              Create Your First Organization
+            </h2>
+            <p className="text-sm text-gray-600">
+              Set up your organization to get started.
+            </p>
           </div>
         </div>
 
@@ -172,7 +174,7 @@ export const OrganizationSelector: React.FC<OrganizationSelectorProps> = ({ onSe
             disabled={creatingOrg}
             className="w-full py-3 px-4 bg-red-600 hover:bg-red-700 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold rounded-md transition-colors"
           >
-            {creatingOrg ? 'Creating Organization...' : 'Create Organization'}
+            {creatingOrg ? "Creating Organization..." : "Create Organization"}
           </button>
         </div>
       </div>
@@ -181,9 +183,11 @@ export const OrganizationSelector: React.FC<OrganizationSelectorProps> = ({ onSe
 
   return (
     <div className="w-full max-w-md mx-auto p-6 bg-white rounded-lg shadow-lg">
-      <h2 className="text-2xl font-bold text-gray-900 mb-2">Select Organization</h2>
+      <h2 className="text-2xl font-bold text-gray-900 mb-2">
+        Select Organization
+      </h2>
       <p className="text-gray-600 mb-6">
-        Choose which organization you'd like to work with.
+        Choose which organization you&apos;d like to work with.
       </p>
 
       <div className="space-y-3">
@@ -195,10 +199,15 @@ export const OrganizationSelector: React.FC<OrganizationSelectorProps> = ({ onSe
           >
             <div className="flex items-start">
               <div className="flex-shrink-0 w-12 h-12 bg-gray-100 group-hover:bg-red-100 rounded-lg flex items-center justify-center mr-4">
-                <Building2 size={24} className="text-gray-600 group-hover:text-red-600" />
+                <Building2
+                  size={24}
+                  className="text-gray-600 group-hover:text-red-600"
+                />
               </div>
               <div className="flex-1">
-                <h3 className="text-lg font-semibold text-gray-900 mb-1">{org.name}</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                  {org.name}
+                </h3>
                 {org.company_email && (
                   <p className="text-sm text-gray-600">{org.company_email}</p>
                 )}

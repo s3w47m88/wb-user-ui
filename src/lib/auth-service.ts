@@ -1,11 +1,15 @@
-import { supabaseControl } from './supabase-control';
+import { supabaseControl } from "./supabase-control";
+import { formatSupabaseClientError } from "./supabase-errors";
 
 export type UserProfile = {
   id: string;
+  user_id: string;
+  email: string;
   first_name: string;
   last_name: string;
   phone?: string;
   marketing_opt_in: boolean;
+  preferences?: Record<string, unknown> | null;
   created_at: string;
   updated_at: string;
 };
@@ -13,9 +17,9 @@ export type UserProfile = {
 export type Organization = {
   id: string;
   name: string;
+  role?: string;
   company_email?: string;
   company_phone?: string;
-  created_by: string;
   created_at: string;
   updated_at: string;
 };
@@ -37,14 +41,14 @@ export type RegistrationData = {
  * Minimum 12 characters with letters, numbers, and special characters
  */
 export function generateNISTPassword(length: number = 16): string {
-  const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-  const lowercase = 'abcdefghijklmnopqrstuvwxyz';
-  const numbers = '0123456789';
-  const specialChars = '!@#$%^&*()-_=+';
+  const uppercase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  const lowercase = "abcdefghijklmnopqrstuvwxyz";
+  const numbers = "0123456789";
+  const specialChars = "!@#$%^&*()-_=+";
 
   const allChars = uppercase + lowercase + numbers + specialChars;
 
-  let password = '';
+  let password = "";
 
   // Ensure at least one of each type
   password += uppercase[Math.floor(Math.random() * uppercase.length)];
@@ -58,7 +62,10 @@ export function generateNISTPassword(length: number = 16): string {
   }
 
   // Shuffle the password
-  return password.split('').sort(() => Math.random() - 0.5).join('');
+  return password
+    .split("")
+    .sort(() => Math.random() - 0.5)
+    .join("");
 }
 
 /**
@@ -66,25 +73,41 @@ export function generateNISTPassword(length: number = 16): string {
  * - Minimum 12 characters
  * - Contains uppercase, lowercase, number, and special character
  */
-export function validatePassword(password: string): { valid: boolean; error?: string } {
+export function validatePassword(password: string): {
+  valid: boolean;
+  error?: string;
+} {
   if (password.length < 12) {
-    return { valid: false, error: 'Password must be at least 12 characters long' };
+    return {
+      valid: false,
+      error: "Password must be at least 12 characters long",
+    };
   }
 
   if (!/[A-Z]/.test(password)) {
-    return { valid: false, error: 'Password must contain at least one uppercase letter' };
+    return {
+      valid: false,
+      error: "Password must contain at least one uppercase letter",
+    };
   }
 
   if (!/[a-z]/.test(password)) {
-    return { valid: false, error: 'Password must contain at least one lowercase letter' };
+    return {
+      valid: false,
+      error: "Password must contain at least one lowercase letter",
+    };
   }
 
   if (!/[0-9]/.test(password)) {
-    return { valid: false, error: 'Password must contain at least one number' };
+    return { valid: false, error: "Password must contain at least one number" };
   }
 
   if (!/[!@#$%^&*()\-_=+]/.test(password)) {
-    return { valid: false, error: 'Password must contain at least one special character (!@#$%^&*()-_=+)' };
+    return {
+      valid: false,
+      error:
+        "Password must contain at least one special character (!@#$%^&*()-_=+)",
+    };
   }
 
   return { valid: true };
@@ -94,13 +117,20 @@ export function validatePassword(password: string): { valid: boolean; error?: st
  * Sanitize input to prevent injection attacks
  */
 function sanitizeInput(input: string): string {
-  return input.trim().replace(/[<>]/g, '');
+  return input.trim().replace(/[<>]/g, "");
 }
 
 /**
  * Register a new user with organization creation
  */
-export async function registerUser(data: RegistrationData): Promise<{ success: boolean; error?: string; userId?: string; organizationId?: string }> {
+export async function registerUser(
+  data: RegistrationData,
+): Promise<{
+  success: boolean;
+  error?: string;
+  userId?: string;
+  organizationId?: string;
+}> {
   try {
     // Validate password
     const passwordValidation = validatePassword(data.password);
@@ -117,15 +147,19 @@ export async function registerUser(data: RegistrationData): Promise<{ success: b
       phone: data.phone ? sanitizeInput(data.phone) : undefined,
       marketingOptIn: Boolean(data.marketingOptIn),
       organizationName: sanitizeInput(data.organizationName),
-      companyEmail: data.companyEmail ? sanitizeInput(data.companyEmail.toLowerCase()) : undefined,
-      companyPhone: data.companyPhone ? sanitizeInput(data.companyPhone) : undefined,
+      companyEmail: data.companyEmail
+        ? sanitizeInput(data.companyEmail.toLowerCase())
+        : undefined,
+      companyPhone: data.companyPhone
+        ? sanitizeInput(data.companyPhone)
+        : undefined,
     };
 
     // Call the API route to register (server-side with admin privileges to bypass RLS)
-    const response = await fetch('/api/register', {
-      method: 'POST',
+    const response = await fetch("/api/register", {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify(sanitizedData),
     });
@@ -133,24 +167,33 @@ export async function registerUser(data: RegistrationData): Promise<{ success: b
     const result = await response.json();
 
     if (!response.ok || !result.success) {
-      return { success: false, error: result.error || 'Registration failed' };
+      return { success: false, error: result.error || "Registration failed" };
     }
 
     return {
       success: true,
       userId: result.userId,
-      organizationId: result.organizationId
+      organizationId: result.organizationId,
     };
   } catch (error) {
-    console.error('Registration error:', error);
-    return { success: false, error: 'An unexpected error occurred during registration' };
+    console.error("Registration error:", error);
+    return {
+      success: false,
+      error: formatSupabaseClientError(
+        error,
+        "An unexpected error occurred during registration",
+      ),
+    };
   }
 }
 
 /**
  * Sign in user
  */
-export async function signIn(email: string, password: string): Promise<{ success: boolean; error?: string }> {
+export async function signIn(
+  email: string,
+  password: string,
+): Promise<{ success: boolean; error?: string }> {
   try {
     const sanitizedEmail = sanitizeInput(email.toLowerCase());
 
@@ -165,8 +208,14 @@ export async function signIn(email: string, password: string): Promise<{ success
 
     return { success: true };
   } catch (error) {
-    console.error('Sign in error:', error);
-    return { success: false, error: 'An unexpected error occurred during sign in' };
+    console.error("Sign in error:", error);
+    return {
+      success: false,
+      error: formatSupabaseClientError(
+        error,
+        "An unexpected error occurred during sign in",
+      ),
+    };
   }
 }
 
@@ -183,8 +232,14 @@ export async function signOut(): Promise<{ success: boolean; error?: string }> {
 
     return { success: true };
   } catch (error) {
-    console.error('Sign out error:', error);
-    return { success: false, error: 'An unexpected error occurred during sign out' };
+    console.error("Sign out error:", error);
+    return {
+      success: false,
+      error: formatSupabaseClientError(
+        error,
+        "An unexpected error occurred during sign out",
+      ),
+    };
   }
 }
 
@@ -193,24 +248,50 @@ export async function signOut(): Promise<{ success: boolean; error?: string }> {
  */
 export async function getCurrentUserProfile(): Promise<UserProfile | null> {
   try {
-    const { data: { user } } = await supabaseControl.auth.getUser();
+    const {
+      data: { user },
+    } = await supabaseControl.auth.getUser();
 
     if (!user) return null;
 
     const { data, error } = await supabaseControl
-      .from('user_profiles')
-      .select('*')
-      .eq('id', user.id)
-      .single();
+      .from("user_profiles")
+      .select("*")
+      .eq("user_id", user.id)
+      .maybeSingle();
 
-    if (error || !data) {
-      console.error('Failed to get user profile:', error);
-      return null;
+    if (error) {
+      console.error("Failed to get user profile:", error);
+      return {
+        id: user.id,
+        user_id: user.id,
+        email: user.email || "",
+        first_name: String(user.user_metadata?.first_name || ""),
+        last_name: String(user.user_metadata?.last_name || ""),
+        phone: user.phone || undefined,
+        marketing_opt_in: Boolean(user.user_metadata?.marketing_opt_in),
+        preferences: null,
+        created_at: "",
+        updated_at: "",
+      };
     }
 
-    return data as UserProfile;
+    return {
+      id: data?.id || user.id,
+      user_id: data?.user_id || user.id,
+      email: user.email || "",
+      first_name: String(user.user_metadata?.first_name || ""),
+      last_name: String(user.user_metadata?.last_name || ""),
+      phone: user.phone || undefined,
+      marketing_opt_in: Boolean(user.user_metadata?.marketing_opt_in),
+      preferences:
+        (data?.preferences as Record<string, unknown> | null | undefined) ??
+        null,
+      created_at: data?.created_at || "",
+      updated_at: data?.updated_at || "",
+    };
   } catch (error) {
-    console.error('Get user profile error:', error);
+    console.error("Get user profile error:", error);
     return null;
   }
 }
@@ -220,30 +301,36 @@ export async function getCurrentUserProfile(): Promise<UserProfile | null> {
  */
 export async function getUserOrganizations(): Promise<Organization[]> {
   try {
-    const { data: { user }, error: userError } = await supabaseControl.auth.getUser();
+    const {
+      data: { session },
+      error: sessionError,
+    } = await supabaseControl.auth.getSession();
 
-    if (userError || !user) return [];
+    if (sessionError || !session?.access_token) {
+      return [];
+    }
 
-    const { data, error } = await supabaseControl
-      .from('organization_members')
-      .select('organization_id, organizations(*)')
-      .eq('user_id', user.id);
+    const response = await fetch("/api/organizations", {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+      },
+    });
+    const result = await response.json();
 
-    if (error) {
-      if (error.code === 'PGRST301' || error.status === 401 || /JWT/i.test(error.message)) {
+    if (!response.ok || !result?.success) {
+      if (response.status === 401) {
         return [];
       }
-      console.error('Failed to get organizations:', error);
+      console.error("Failed to get organizations:", result?.error || result);
       return [];
     }
 
-    if (!data) {
-      return [];
-    }
-
-    return data.map((item: any) => item.organizations) as Organization[];
+    return Array.isArray(result.organizations)
+      ? (result.organizations as Organization[])
+      : [];
   } catch (error) {
-    console.error('Get organizations error:', error);
+    console.error("Get organizations error:", error);
     return [];
   }
 }
@@ -251,13 +338,18 @@ export async function getUserOrganizations(): Promise<Organization[]> {
 /**
  * Request password reset
  */
-export async function requestPasswordReset(email: string): Promise<{ success: boolean; error?: string }> {
+export async function requestPasswordReset(
+  email: string,
+): Promise<{ success: boolean; error?: string }> {
   try {
     const sanitizedEmail = sanitizeInput(email.toLowerCase());
 
-    const { error } = await supabaseControl.auth.resetPasswordForEmail(sanitizedEmail, {
-      redirectTo: `${window.location.origin}/reset-password`,
-    });
+    const { error } = await supabaseControl.auth.resetPasswordForEmail(
+      sanitizedEmail,
+      {
+        redirectTo: `${window.location.origin}/reset-password`,
+      },
+    );
 
     if (error) {
       return { success: false, error: error.message };
@@ -265,15 +357,20 @@ export async function requestPasswordReset(email: string): Promise<{ success: bo
 
     return { success: true };
   } catch (error) {
-    console.error('Password reset request error:', error);
-    return { success: false, error: 'An unexpected error occurred' };
+    console.error("Password reset request error:", error);
+    return {
+      success: false,
+      error: formatSupabaseClientError(error, "An unexpected error occurred"),
+    };
   }
 }
 
 /**
  * Update password (after reset)
  */
-export async function updatePassword(newPassword: string): Promise<{ success: boolean; error?: string }> {
+export async function updatePassword(
+  newPassword: string,
+): Promise<{ success: boolean; error?: string }> {
   try {
     // Validate password
     const passwordValidation = validatePassword(newPassword);
@@ -291,23 +388,28 @@ export async function updatePassword(newPassword: string): Promise<{ success: bo
 
     return { success: true };
   } catch (error) {
-    console.error('Update password error:', error);
-    return { success: false, error: 'An unexpected error occurred' };
+    console.error("Update password error:", error);
+    return {
+      success: false,
+      error: formatSupabaseClientError(error, "An unexpected error occurred"),
+    };
   }
 }
 
 /**
  * Check if a user exists by email (LOCALHOST ONLY - FOR DEVELOPMENT)
  */
-export async function checkUserExists(email: string): Promise<{ exists: boolean; userId?: string }> {
+export async function checkUserExists(
+  email: string,
+): Promise<{ exists: boolean; userId?: string }> {
   try {
     const sanitizedEmail = sanitizeInput(email.toLowerCase());
 
     // Call the API route to check user existence (server-side with service role key)
-    const response = await fetch('/api/check-user-exists', {
-      method: 'POST',
+    const response = await fetch("/api/check-user-exists", {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
         email: sanitizedEmail,
@@ -317,16 +419,16 @@ export async function checkUserExists(email: string): Promise<{ exists: boolean;
     const data = await response.json();
 
     if (!response.ok || !data.success) {
-      console.error('Failed to check user existence:', data.error);
+      console.error("Failed to check user existence:", data.error);
       return { exists: false };
     }
 
     return {
       exists: data.exists,
-      userId: data.userId
+      userId: data.userId,
     };
-  } catch (error: any) {
-    console.error('Check user exists error:', error);
+  } catch (error: unknown) {
+    console.error("Check user exists error:", error);
     return { exists: false };
   }
 }
@@ -335,15 +437,18 @@ export async function checkUserExists(email: string): Promise<{ exists: boolean;
  * Delete a test user and all related data (LOCALHOST ONLY - FOR DEVELOPMENT)
  * This deletes: user auth, user_profile, organizations created by user, organization_members, and pages
  */
-export async function deleteTestUser(email: string, password: string): Promise<{ success: boolean; error?: string }> {
+export async function deleteTestUser(
+  email: string,
+  password: string,
+): Promise<{ success: boolean; error?: string }> {
   try {
     const sanitizedEmail = sanitizeInput(email.toLowerCase());
 
     // Call the API route to delete the user (server-side with service role key)
-    const response = await fetch('/api/delete-test-user', {
-      method: 'POST',
+    const response = await fetch("/api/delete-test-user", {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
         email: sanitizedEmail,
@@ -354,12 +459,20 @@ export async function deleteTestUser(email: string, password: string): Promise<{
     const data = await response.json();
 
     if (!response.ok || !data.success) {
-      return { success: false, error: data.error || 'Failed to delete user' };
+      return { success: false, error: data.error || "Failed to delete user" };
     }
 
     return { success: true };
-  } catch (error: any) {
-    console.error('Delete test user error:', error);
-    return { success: false, error: error.message || 'An unexpected error occurred during deletion' };
+  } catch (error: unknown) {
+    console.error("Delete test user error:", error);
+    return {
+      success: false,
+      error: formatSupabaseClientError(
+        error,
+        error instanceof Error
+          ? error.message
+          : "An unexpected error occurred during deletion",
+      ),
+    };
   }
 }

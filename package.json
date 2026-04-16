@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test": "tsx --test src/**/*.test.ts",
     "migrate": "tsx scripts/migrate.ts",
     "seed:control-admin": "tsx scripts/seed-control-admin.ts",
     "prepare": "husky"

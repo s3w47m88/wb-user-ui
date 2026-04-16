@@ -1,49 +1,38 @@
-import { supabaseContent, PageConfig } from './supabase-content';
+import { isValidUuid, normalizePageId, slugify } from "./builder-pages";
+import { PageConfig } from "./supabase-content";
+
+type PageServiceError = Error & {
+  code?: string;
+};
 
 /**
  * Get the currently selected organization ID from localStorage
  */
 function getSelectedOrganizationId(): string | null {
-  if (typeof window === 'undefined') return null;
-  return localStorage.getItem('selectedOrganizationId');
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem("selectedOrganizationId");
 }
 
-function slugify(value: string): string {
-  const slug = value
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/(^-|-$)+/g, '');
-  return slug || `page-${Date.now().toString(36)}`;
-}
-
-function isValidUuid(value?: string | null): value is string {
-  return Boolean(
-    value &&
-      value !== 'undefined' &&
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value)
-  );
-}
-
-export async function savePage(pageConfig: Omit<PageConfig, 'id' | 'created_at' | 'updated_at'>) {
+export async function savePage(
+  pageConfig: Omit<PageConfig, "id" | "created_at" | "updated_at">,
+) {
   const organizationId = getSelectedOrganizationId();
-  const siteId = isValidUuid(pageConfig.site_id) ? pageConfig.site_id : null;
 
   if (!organizationId) {
-    throw new Error('No organization selected. Please select an organization first.');
+    throw new Error(
+      "No organization selected. Please select an organization first.",
+    );
   }
 
-  if (!siteId) {
-    throw new Error('No site ID available. Please create a site first.');
-  }
+  const slug = pageConfig.slug?.trim() || slugify(pageConfig.name || "page");
 
-  const slug = pageConfig.slug?.trim() || slugify(pageConfig.name || 'page');
-
-  const response = await fetch('/api/pages', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+  const response = await fetch("/api/pages", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      site_id: siteId,
+      ...(isValidUuid(pageConfig.site_id)
+        ? { site_id: pageConfig.site_id }
+        : {}),
       name: pageConfig.name,
       title: pageConfig.name,
       slug,
@@ -58,24 +47,35 @@ export async function savePage(pageConfig: Omit<PageConfig, 'id' | 'created_at' 
   const result = await response.json();
 
   if (!response.ok) {
-    console.error('Error saving page:', {
+    console.error("Error saving page:", {
       error: result?.error,
       organizationId,
       status: response.status,
       message: result?.message,
     });
-    throw new Error(`Failed to save page: ${result?.message || 'Unknown error'}`);
+    throw new Error(
+      `Failed to save page: ${result?.message || "Unknown error"}`,
+    );
   }
 
   return result as PageConfig;
 }
 
 export async function updatePage(id: string, pageConfig: Partial<PageConfig>) {
-  const siteId = isValidUuid(pageConfig.site_id) ? pageConfig.site_id : undefined;
+  const siteId = isValidUuid(pageConfig.site_id)
+    ? pageConfig.site_id
+    : undefined;
+  const pageId = normalizePageId(id);
 
-  const response = await fetch(`/api/pages/${id}`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
+  if (!pageId) {
+    const error: PageServiceError = new Error("Invalid page ID.");
+    error.code = "NOT_FOUND";
+    throw error;
+  }
+
+  const response = await fetch(`/api/pages/${pageId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       ...(siteId ? { site_id: siteId } : {}),
       name: pageConfig.name,
@@ -89,9 +89,11 @@ export async function updatePage(id: string, pageConfig: Partial<PageConfig>) {
   const result = await response.json();
 
   if (!response.ok) {
-    const error: any = new Error(`Failed to update page: ${result?.message || 'Unknown error'}`);
-    error.code = response.status === 404 ? 'NOT_FOUND' : result?.code;
-    console.error('Error updating page:', {
+    const error: PageServiceError = new Error(
+      `Failed to update page: ${result?.message || "Unknown error"}`,
+    );
+    error.code = response.status === 404 ? "NOT_FOUND" : result?.code;
+    console.error("Error updating page:", {
       error: result?.error,
       pageId: id,
       code: error.code,
@@ -105,75 +107,84 @@ export async function updatePage(id: string, pageConfig: Partial<PageConfig>) {
 }
 
 export async function loadPage(id: string) {
-  const { data, error } = await supabaseContent
-    .from('pages')
-    .select('*')
-    .eq('id', id)
-    .single();
+  const pageId = normalizePageId(id);
 
-  if (error) {
-    console.error('Error loading page:', error);
-    throw new Error('Failed to load page');
+  if (!pageId) {
+    throw new Error("Invalid page ID.");
   }
 
-  return data as PageConfig;
+  const response = await fetch(`/api/pages/${pageId}`, {
+    method: "GET",
+    headers: { Accept: "application/json" },
+  });
+  const result = await response.json();
+
+  if (!response.ok) {
+    console.error("Error loading page:", {
+      status: response.status,
+      message: result?.message,
+    });
+    throw new Error(result?.message || "Failed to load page");
+  }
+
+  return result as PageConfig;
 }
 
 export async function listPages() {
-  const organizationId = getSelectedOrganizationId();
-
-  let query = supabaseContent
-    .from('pages')
-    .select('id, name, created_at, updated_at')
-    .order('created_at', { ascending: false });
-
-  // Filter by organization if one is selected
-  if (organizationId) {
-    query = query.eq('organization_id', organizationId);
-  }
-
-  const { data, error } = await query;
-
-  if (error) {
-    console.error('Error listing pages:', error);
-    throw new Error('Failed to list pages');
-  }
-
-  return data;
+  const pages = await getAllPages();
+  return pages.map(({ id, name, created_at, updated_at }) => ({
+    id,
+    name,
+    created_at,
+    updated_at,
+  }));
 }
 
 export async function getAllPages() {
   const organizationId = getSelectedOrganizationId();
 
-  let query = supabaseContent
-    .from('pages')
-    .select('*')
-    .order('created_at', { ascending: false });
-
-  // Filter by organization if one is selected
-  if (organizationId) {
-    query = query.eq('organization_id', organizationId);
-  }
-
-  const { data, error } = await query;
-
-  if (error) {
-    console.error('Error getting all pages:', error);
-    // Return empty array instead of throwing - table might not exist yet
+  if (!organizationId) {
     return [];
   }
 
-  return data as PageConfig[];
+  const response = await fetch(
+    `/api/pages?organization_id=${encodeURIComponent(organizationId)}`,
+    {
+      method: "GET",
+      headers: { Accept: "application/json" },
+    },
+  );
+  const result = await response.json();
+
+  if (!response.ok) {
+    console.error("Error getting all pages:", {
+      status: response.status,
+      message: result?.message,
+    });
+    return [];
+  }
+
+  return result as PageConfig[];
 }
 
 export async function deletePage(id: string) {
-  const { error } = await supabaseContent
-    .from('pages')
-    .delete()
-    .eq('id', id);
+  const pageId = normalizePageId(id);
 
-  if (error) {
-    console.error('Error deleting page:', error);
-    throw new Error('Failed to delete page');
+  if (!pageId) {
+    throw new Error("Invalid page ID.");
+  }
+
+  const response = await fetch(`/api/pages/${pageId}`, {
+    method: "DELETE",
+    headers: { Accept: "application/json" },
+  });
+  const result = await response.json();
+
+  if (!response.ok) {
+    console.error("Error deleting page:", {
+      status: response.status,
+      message: result?.message,
+    });
+    throw new Error(result?.message || "Failed to delete page");
   }
 }
