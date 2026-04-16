@@ -38,6 +38,14 @@ export const SECTION_BACKGROUND_POSITIONS = [
   { value: "right", label: "Right" },
 ] as const;
 
+export const SECTION_HERO_EFFECTS = [
+  { value: "none", label: "None" },
+  { value: "darken", label: "Darken Overlay" },
+  { value: "blur", label: "Soft Blur" },
+  { value: "pulse", label: "Gradient Pulse" },
+  { value: "cinematic", label: "Darken + Pulse" },
+] as const;
+
 export type SectionBackgroundMode =
   (typeof SECTION_BACKGROUND_MODES)[number]["value"];
 export type SectionWidthMode = (typeof SECTION_WIDTH_MODES)[number]["value"];
@@ -48,6 +56,8 @@ export type SectionBackgroundSize =
   (typeof SECTION_BACKGROUND_SIZES)[number]["value"];
 export type SectionBackgroundPosition =
   (typeof SECTION_BACKGROUND_POSITIONS)[number]["value"];
+export type SectionHeroEffect =
+  (typeof SECTION_HERO_EFFECTS)[number]["value"];
 
 export type SectionStyleConfig = {
   widthMode: SectionWidthMode;
@@ -66,6 +76,7 @@ export type SectionStyleConfig = {
   backgroundImage: string;
   backgroundSize: SectionBackgroundSize;
   backgroundPosition: SectionBackgroundPosition;
+  heroEffect: SectionHeroEffect;
 };
 
 type SectionBackgroundFallback = {
@@ -94,6 +105,9 @@ const VALID_BACKGROUND_SIZES = new Set<SectionBackgroundSize>(
 const VALID_BACKGROUND_POSITIONS = new Set<SectionBackgroundPosition>(
   SECTION_BACKGROUND_POSITIONS.map(({ value }) => value),
 );
+const VALID_HERO_EFFECTS = new Set<SectionHeroEffect>(
+  SECTION_HERO_EFFECTS.map(({ value }) => value),
+);
 
 export const defaultSectionStyleConfig: SectionStyleConfig = {
   widthMode: "full",
@@ -112,6 +126,7 @@ export const defaultSectionStyleConfig: SectionStyleConfig = {
   backgroundImage: "",
   backgroundSize: "cover",
   backgroundPosition: "center",
+  heroEffect: "none",
 };
 
 function clampOpacity(value: unknown) {
@@ -256,6 +271,11 @@ export function getSectionStyleConfig(
       rawConfig.backgroundPosition,
       VALID_BACKGROUND_POSITIONS,
       defaultSectionStyleConfig.backgroundPosition,
+    ),
+    heroEffect: getEnumValue(
+      rawConfig.heroEffect,
+      VALID_HERO_EFFECTS,
+      defaultSectionStyleConfig.heroEffect,
     ),
   };
 }

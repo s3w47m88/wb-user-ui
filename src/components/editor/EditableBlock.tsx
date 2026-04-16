@@ -370,6 +370,7 @@ export const EditableBlock: React.FC<EditableBlockProps> = ({
   const handleImageSelected = (url: string) => {
     if (currentImageKey) {
       updateComponent(component.id, { [currentImageKey]: url });
+      saveNow();
     }
   };
 
@@ -588,6 +589,17 @@ function renderComponent(
       backgroundPosition: "center",
       backgroundRepeat: "no-repeat",
     });
+    const showDarkOverlay =
+      sectionStyle.heroEffect === "darken" ||
+      sectionStyle.heroEffect === "blur" ||
+      sectionStyle.heroEffect === "cinematic";
+    const darkOverlayClassName =
+      sectionStyle.heroEffect === "blur"
+        ? "absolute inset-0 bg-black/20 backdrop-blur-sm"
+        : "absolute inset-0 bg-black/35";
+    const showPulseOverlay =
+      sectionStyle.heroEffect === "pulse" ||
+      sectionStyle.heroEffect === "cinematic";
 
     return (
       <div
@@ -598,13 +610,15 @@ function renderComponent(
           ...backgroundStyle,
         }}
       >
-        <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" />
-        <div
-          className="absolute inset-0 animate-pulse"
-          style={{
-            background: `linear-gradient(to right, ${gradientFrom}33, ${gradientTo}33)`,
-          }}
-        />
+        {showDarkOverlay && <div className={darkOverlayClassName} />}
+        {showPulseOverlay && (
+          <div
+            className="absolute inset-0 animate-pulse"
+            style={{
+              background: `linear-gradient(to right, ${gradientFrom}33, ${gradientTo}33)`,
+            }}
+          />
+        )}
         <SectionSnapGrid
           visible={Boolean(
             layoutEditor?.isComponentSelected && layoutEditor.selectedKey,

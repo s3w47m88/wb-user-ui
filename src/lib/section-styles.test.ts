@@ -18,6 +18,7 @@ test("getSectionStyleConfig normalizes malformed section settings", () => {
       gradientDirection: "to bottom",
       backgroundSize: "contain",
       backgroundPosition: "top",
+      heroEffect: "fog",
     },
   });
 
@@ -28,6 +29,19 @@ test("getSectionStyleConfig normalizes malformed section settings", () => {
   assert.equal(config.gradientDirection, "to bottom");
   assert.equal(config.backgroundSize, "contain");
   assert.equal(config.backgroundPosition, "top");
+  assert.equal(config.heroEffect, "none");
+});
+
+test("getSectionStyleConfig keeps valid hero effect values", () => {
+  const config = getSectionStyleConfig({
+    sectionStyle: {
+      backgroundMode: "image",
+      heroEffect: "cinematic",
+    },
+  });
+
+  assert.equal(config.backgroundMode, "image");
+  assert.equal(config.heroEffect, "cinematic");
 });
 
 test("buildSectionContainerStyle centers fixed width sections and preserves min height", () => {

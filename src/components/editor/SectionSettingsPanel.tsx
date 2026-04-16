@@ -15,9 +15,11 @@ import {
   SECTION_BACKGROUND_SIZES,
   SECTION_GRADIENT_DIRECTIONS,
   SECTION_HEIGHT_MODES,
+  SECTION_HERO_EFFECTS,
   SectionStyleConfig,
   SECTION_WIDTH_MODES,
 } from "@/lib/section-styles";
+import { ImageUploadField } from "./ImageUploadField";
 
 type SectionSettingsPanelProps = {
   value: SectionStyleConfig;
@@ -394,21 +396,15 @@ export const SectionSettingsPanel: React.FC<SectionSettingsPanelProps> = ({
 
           {value.backgroundMode === "image" && (
             <>
-              <div>
-                <label className="mb-2 block text-sm font-medium text-gray-700">
-                  Image URL
-                </label>
-                <input
-                  type="text"
-                  value={value.backgroundImage}
-                  onChange={(event) =>
-                    updateField("backgroundImage", event.target.value)
-                  }
-                  onBlur={onSave}
-                  placeholder="https://example.com/hero.jpg"
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-                />
-              </div>
+              <ImageUploadField
+                label="Background Image"
+                value={value.backgroundImage}
+                onChange={(fieldValue) =>
+                  updateField("backgroundImage", fieldValue)
+                }
+                onSave={onSave}
+                placeholder="https://example.com/hero.webp"
+              />
 
               <ColorField
                 label="Overlay Color"
@@ -470,6 +466,38 @@ export const SectionSettingsPanel: React.FC<SectionSettingsPanelProps> = ({
                     ))}
                   </select>
                 </div>
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-medium text-gray-700">
+                  Hero Effect
+                </label>
+                <select
+                  value={value.heroEffect}
+                  onChange={(event) =>
+                    updateField(
+                      "heroEffect",
+                      event.target.value as
+                        | "none"
+                        | "darken"
+                        | "blur"
+                        | "pulse"
+                        | "cinematic",
+                    )
+                  }
+                  onBlur={onSave}
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+                >
+                  {SECTION_HERO_EFFECTS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+                <p className="mt-2 text-xs text-gray-500">
+                  Only hero sections use this. Choose no effect to show the raw
+                  background image.
+                </p>
               </div>
             </>
           )}

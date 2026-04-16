@@ -1,290 +1,305 @@
 "use client";
 
-import React, { useState, useRef } from "react";
-import { X, Upload, Link as LinkIcon, Wand2 } from "lucide-react";
+import React, { useEffect, useRef, useState } from "react";
+import { Link as LinkIcon, LoaderCircle, Upload, Wand2, X } from "lucide-react";
+import { useEditorStore } from "@/store/editor-store";
+import {
+  ACCEPTED_IMAGE_UPLOAD_INPUT,
+  prepareAndUploadImage,
+} from "@/lib/image-upload";
 
 type ImageUploaderProps = {
+  currentImageUrl?: string;
   isOpen: boolean;
   onClose: () => void;
   onImageSelected: (url: string) => void;
-  currentImageUrl?: string;
 };
 
+const getErrorMessage = (error: unknown) =>
+  error instanceof Error ? error.message : "Image upload failed.";
+
 export const ImageUploader: React.FC<ImageUploaderProps> = ({
+  currentImageUrl,
   isOpen,
   onClose,
   onImageSelected,
-  currentImageUrl,
 }) => {
-  const [imageUrl, setImageUrl] = useState(currentImageUrl || "");
-  const [previewUrl, setPreviewUrl] = useState(currentImageUrl || "");
-  const [isProcessing, setIsProcessing] = useState(false);
   const [activeTab, setActiveTab] = useState<"upload" | "url" | "ai">("upload");
+  const [error, setError] = useState<string | null>(null);
+  const [imageUrl, setImageUrl] = useState("");
+  const [isDragging, setIsDragging] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { currentPageId, siteId } = useEditorStore();
 
-  if (!isOpen) return null;
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
 
-  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const nextUrl = currentImageUrl || "";
+    setActiveTab(nextUrl ? "url" : "upload");
+    setError(null);
+    setImageUrl(nextUrl);
+    setIsDragging(false);
+    setIsUploading(false);
+    setPreviewUrl(nextUrl);
+  }, [currentImageUrl, isOpen]);
 
-    setIsProcessing(true);
+  if (!isOpen) {
+    return null;
+  }
+
+  const handleFileUpload = async (file: File | null | undefined) => {
+    if (!file) {
+      return;
+    }
+
+    setError(null);
+    setIsUploading(true);
 
     try {
-      // Validate file type
-      if (!file.type.startsWith("image/")) {
-        alert("Please select an image file");
-        return;
+      const uploadedImage = await prepareAndUploadImage(file, {
+        pageId: currentPageId,
+        siteId,
+      });
+
+      setActiveTab("upload");
+      setImageUrl(uploadedImage.url);
+      setPreviewUrl(uploadedImage.url);
+    } catch (uploadError) {
+      setError(getErrorMessage(uploadError));
+    } finally {
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
       }
-
-      // Read the file
-      const reader = new FileReader();
-      reader.onload = async (event) => {
-        const img = new Image();
-        img.onload = async () => {
-          // Create canvas for resizing
-          const canvas = document.createElement("canvas");
-          const ctx = canvas.getContext("2d");
-          if (!ctx) return;
-
-          // Calculate new dimensions (max 1920x1080)
-          let width = img.width;
-          let height = img.height;
-          const maxWidth = 1920;
-          const maxHeight = 1080;
-
-          if (width > maxWidth || height > maxHeight) {
-            const ratio = Math.min(maxWidth / width, maxHeight / height);
-            width = width * ratio;
-            height = height * ratio;
-          }
-
-          canvas.width = width;
-          canvas.height = height;
-
-          // Draw and compress
-          ctx.drawImage(img, 0, 0, width, height);
-
-          // Convert to WebP with quality 0.85
-          canvas.toBlob(
-            (blob) => {
-              if (!blob) return;
-
-              // Create object URL for preview
-              const url = URL.createObjectURL(blob);
-              setPreviewUrl(url);
-              setImageUrl(url);
-              setIsProcessing(false);
-            },
-            "image/webp",
-            0.85,
-          );
-        };
-        img.src = event.target?.result as string;
-      };
-      reader.readAsDataURL(file);
-    } catch (error) {
-      console.error("Error processing image:", error);
-      alert("Failed to process image");
-      setIsProcessing(false);
-    }
-  };
-
-  const handleUrlSubmit = () => {
-    if (imageUrl.trim()) {
-      setPreviewUrl(imageUrl);
+      setIsDragging(false);
+      setIsUploading(false);
     }
   };
 
   const handleApply = () => {
-    if (previewUrl) {
-      onImageSelected(previewUrl);
-      onClose();
+    if (!previewUrl) {
+      setError("Choose or paste an image first.");
+      return;
     }
-  };
 
-  const handleClose = () => {
-    setImageUrl("");
-    setPreviewUrl("");
+    onImageSelected(previewUrl);
     onClose();
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-auto">
-        {/* Header */}
-        <div className="border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-          <h2 className="text-xl font-bold">Upload Image</h2>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div className="max-h-[90vh] w-full max-w-3xl overflow-auto rounded-lg bg-white shadow-xl">
+        <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
+          <h2 className="text-xl font-bold text-gray-900">Upload Image</h2>
           <button
-            onClick={handleClose}
+            type="button"
+            onClick={onClose}
             className="text-gray-500 hover:text-gray-700"
           >
             <X size={20} />
           </button>
         </div>
 
-        {/* Tabs */}
         <div className="border-b border-gray-200">
           <div className="flex px-6">
             <button
+              type="button"
               onClick={() => setActiveTab("upload")}
-              className={`px-4 py-3 font-medium border-b-2 transition-colors ${
+              className={`border-b-2 px-4 py-3 font-medium transition-colors ${
                 activeTab === "upload"
                   ? "border-blue-600 text-blue-600"
                   : "border-transparent text-gray-500 hover:text-gray-700"
               }`}
             >
-              <Upload className="inline mr-2" size={16} />
+              <Upload className="mr-2 inline" size={16} />
               Upload File
             </button>
             <button
+              type="button"
               onClick={() => setActiveTab("url")}
-              className={`px-4 py-3 font-medium border-b-2 transition-colors ${
+              className={`border-b-2 px-4 py-3 font-medium transition-colors ${
                 activeTab === "url"
                   ? "border-blue-600 text-blue-600"
                   : "border-transparent text-gray-500 hover:text-gray-700"
               }`}
             >
-              <LinkIcon className="inline mr-2" size={16} />
+              <LinkIcon className="mr-2 inline" size={16} />
               Image URL
             </button>
             <button
+              type="button"
               onClick={() => setActiveTab("ai")}
-              className={`px-4 py-3 font-medium border-b-2 transition-colors ${
+              className={`border-b-2 px-4 py-3 font-medium transition-colors ${
                 activeTab === "ai"
                   ? "border-blue-600 text-blue-600"
                   : "border-transparent text-gray-500 hover:text-gray-700"
               }`}
             >
-              <Wand2 className="inline mr-2" size={16} />
+              <Wand2 className="mr-2 inline" size={16} />
               Generate with AI
             </button>
           </div>
         </div>
 
-        {/* Content */}
-        <div className="p-6">
+        <div className="space-y-4 p-6">
           {activeTab === "upload" && (
             <div className="space-y-4">
               <div
-                className="border-2 border-dashed border-gray-300 rounded-lg p-12 text-center hover:border-blue-500 transition-colors cursor-pointer"
+                className={`cursor-pointer rounded-lg border-2 border-dashed p-12 text-center transition-colors ${
+                  isDragging
+                    ? "border-blue-500 bg-blue-50"
+                    : "border-gray-300 hover:border-blue-500"
+                }`}
                 onClick={() => fileInputRef.current?.click()}
+                onDragEnter={(event) => {
+                  event.preventDefault();
+                  setIsDragging(true);
+                }}
+                onDragLeave={(event) => {
+                  event.preventDefault();
+                  if (
+                    event.currentTarget.contains(
+                      event.relatedTarget as Node | null,
+                    )
+                  ) {
+                    return;
+                  }
+
+                  setIsDragging(false);
+                }}
+                onDragOver={(event) => {
+                  event.preventDefault();
+                  setIsDragging(true);
+                }}
+                onDrop={(event) => {
+                  event.preventDefault();
+                  void handleFileUpload(event.dataTransfer.files?.[0]);
+                }}
               >
-                <Upload className="mx-auto mb-4 text-gray-400" size={48} />
-                <p className="text-lg font-medium mb-2">
-                  Click to upload or drag and drop
+                {isUploading ? (
+                  <LoaderCircle
+                    className="mx-auto mb-4 animate-spin text-blue-600"
+                    size={48}
+                  />
+                ) : (
+                  <Upload className="mx-auto mb-4 text-gray-400" size={48} />
+                )}
+                <p className="mb-2 text-lg font-medium">
+                  Click to upload or drag from desktop
                 </p>
                 <p className="text-sm text-gray-500">
-                  PNG, JPG, GIF up to 10MB
+                  PNG, JPG, WEBP, GIF, or AVIF up to 10MB
                 </p>
-                <p className="text-xs text-gray-400 mt-2">
-                  Images will be automatically resized and converted to WebP for
-                  optimal performance
+                <p className="mt-2 text-xs text-gray-400">
+                  Images are resized and converted to WebP automatically.
                 </p>
               </div>
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/*"
-                onChange={handleFileSelect}
+                accept={ACCEPTED_IMAGE_UPLOAD_INPUT}
+                onChange={(event) => {
+                  void handleFileUpload(event.target.files?.[0]);
+                }}
                 className="hidden"
               />
-
-              {isProcessing && (
-                <div className="flex items-center justify-center py-8">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
-                  <span className="ml-3 text-gray-600">
-                    Processing image...
-                  </span>
-                </div>
-              )}
-
-              {previewUrl && !isProcessing && (
-                <div className="space-y-4">
-                  <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden">
-                    <img
-                      src={previewUrl}
-                      alt="Preview"
-                      className="w-full h-full object-contain"
-                    />
-                  </div>
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                    <p className="text-sm text-green-800">
-                      ✓ Image optimized: Resized to fit 1920x1080 and converted
-                      to WebP format
-                    </p>
-                  </div>
-                </div>
-              )}
             </div>
           )}
 
           {activeTab === "url" && (
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="mb-2 block text-sm font-medium text-gray-700">
                   Image URL
                 </label>
                 <input
                   type="url"
                   value={imageUrl}
-                  onChange={(e) => setImageUrl(e.target.value)}
-                  placeholder="https://example.com/image.jpg"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  onChange={(event) => {
+                    setError(null);
+                    setImageUrl(event.target.value);
+                  }}
+                  placeholder="https://example.com/image.webp"
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
                 />
               </div>
               <button
-                onClick={handleUrlSubmit}
-                className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                type="button"
+                onClick={() => {
+                  if (!imageUrl.trim()) {
+                    setError("Paste an image URL first.");
+                    return;
+                  }
+
+                  setError(null);
+                  setPreviewUrl(imageUrl.trim());
+                }}
+                className="w-full rounded-lg bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700"
               >
                 Preview Image
               </button>
-
-              {previewUrl && (
-                <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden">
-                  <img
-                    src={previewUrl}
-                    alt="Preview"
-                    className="w-full h-full object-contain"
-                    onError={() => {
-                      alert("Failed to load image. Please check the URL.");
-                      setPreviewUrl("");
-                    }}
-                  />
-                </div>
-              )}
             </div>
           )}
 
           {activeTab === "ai" && (
             <div className="space-y-4">
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
                 <p className="text-sm text-blue-800">
-                  🚀 AI image generation is available! Click the &quot;Generate
-                  with AI&quot; button in the property panel to create custom
-                  images using text prompts.
+                  AI image generation is available in the property panel. Use
+                  the generate button there to create custom images from text
+                  prompts.
                 </p>
               </div>
               <p className="text-sm text-gray-600">
-                This feature uses Stable Diffusion to generate high-quality
-                images based on your descriptions.
+                Generated images can still be applied here after they have a
+                real URL.
               </p>
             </div>
           )}
+
+          {previewUrl && (
+            <div className="space-y-3">
+              <div className="aspect-video overflow-hidden rounded-lg bg-gray-100">
+                <img
+                  src={previewUrl}
+                  alt="Preview"
+                  className="h-full w-full object-contain"
+                  onError={() => {
+                    setError("Could not load preview. Check the image source.");
+                    setPreviewUrl("");
+                  }}
+                />
+              </div>
+              {activeTab === "upload" && (
+                <div className="rounded-lg border border-green-200 bg-green-50 p-4">
+                  <p className="text-sm text-green-800">
+                    Image uploaded and optimized. Apply it to save this image to
+                    the block.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {error && <p className="text-sm text-red-600">{error}</p>}
         </div>
 
-        {/* Footer */}
-        <div className="border-t border-gray-200 px-6 py-4 flex justify-end gap-3">
+        <div className="flex justify-end gap-3 border-t border-gray-200 px-6 py-4">
           <button
-            onClick={handleClose}
-            className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            type="button"
+            onClick={onClose}
+            className="rounded-lg border border-gray-300 px-4 py-2 transition-colors hover:bg-gray-50"
           >
             Cancel
           </button>
           <button
+            type="button"
             onClick={handleApply}
             disabled={!previewUrl}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+            className="rounded-lg bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-gray-400"
           >
             Apply Image
           </button>

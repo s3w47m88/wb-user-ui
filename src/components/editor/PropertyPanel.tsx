@@ -5,6 +5,7 @@ import { useEditorStore } from "@/store/editor-store";
 import { getBlockConfig } from "@/lib/block-registry";
 import { X, Wand2 } from "lucide-react";
 import { ImageGenerator } from "./ImageGenerator";
+import { ImageUploadField } from "./ImageUploadField";
 
 type PropertySchema = {
   type: string;
@@ -69,11 +70,6 @@ export const PropertyPanel: React.FC = () => {
     const value = selectedComponent.props[key];
     return typeof value === "number" ? value : "";
   };
-  const getImagePreviewUrl = (key: string) => {
-    const value = selectedComponent.props[key];
-    return typeof value === "string" && value.length > 0 ? value : null;
-  };
-
   return (
     <div className="w-80 bg-white border-l border-gray-200 overflow-auto">
       <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
@@ -91,9 +87,11 @@ export const PropertyPanel: React.FC = () => {
           blockConfig.propsSchema as Record<string, PropertySchema>,
         ).map(([key, schema]) => (
           <div key={key}>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              {schema.label}
-            </label>
+            {schema.type !== "image" && (
+              <label className="mb-2 block text-sm font-medium text-gray-700">
+                {schema.label}
+              </label>
+            )}
 
             {schema.type === "text" && (
               <input
@@ -166,13 +164,12 @@ export const PropertyPanel: React.FC = () => {
 
             {schema.type === "image" && (
               <div className="space-y-2">
-                <input
-                  type="text"
+                <ImageUploadField
+                  label={schema.label}
                   value={getStringValue(key)}
-                  onChange={(e) => handlePropertyChange(key, e.target.value)}
-                  onBlur={saveNow}
-                  placeholder="Image URL"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  onChange={(value) => handlePropertyChange(key, value)}
+                  onSave={saveNow}
+                  placeholder="https://example.com/image.webp"
                 />
                 <button
                   onClick={() => {
@@ -184,13 +181,6 @@ export const PropertyPanel: React.FC = () => {
                   <Wand2 size={16} />
                   Generate with AI
                 </button>
-                {getImagePreviewUrl(key) && (
-                  <img
-                    src={getImagePreviewUrl(key) || ""}
-                    alt="Preview"
-                    className="w-full h-32 object-cover rounded-lg border border-gray-200"
-                  />
-                )}
               </div>
             )}
           </div>
