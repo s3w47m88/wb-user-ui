@@ -13,6 +13,13 @@ import {
   SNAP_GRID_SIZE,
   snapPosition,
 } from "@/lib/element-layouts";
+import { SectionSettingsPanel } from "./SectionSettingsPanel";
+import {
+  buildSectionBackgroundStyle,
+  buildSectionContainerStyle,
+  getSectionStyleConfig,
+  SectionStyleConfig,
+} from "@/lib/section-styles";
 import {
   GripVertical,
   Trash2,
@@ -24,6 +31,7 @@ import {
   AlignStartVertical,
   AlignCenterVertical,
   AlignEndVertical,
+  SlidersHorizontal,
 } from "lucide-react";
 import { ImageUploader } from "./ImageUploader";
 import { FloatingTextToolbar } from "./FloatingTextToolbar";
@@ -328,6 +336,7 @@ export const EditableBlock: React.FC<EditableBlockProps> = ({
   } = useEditorStore();
   const [showImageUploader, setShowImageUploader] = useState(false);
   const [showTextToolbar, setShowTextToolbar] = useState(false);
+  const [showSectionSettings, setShowSectionSettings] = useState(false);
   const [currentImageKey, setCurrentImageKey] = useState<string | null>(null);
   const [selectedElementKey, setSelectedElementKey] = useState<string | null>(
     null,
@@ -336,10 +345,12 @@ export const EditableBlock: React.FC<EditableBlockProps> = ({
   const visibleSelectedElementKey = isComponentSelected
     ? selectedElementKey
     : null;
+  const isSectionSettingsVisible = showSectionSettings && isComponentSelected;
   const currentImageUrl =
     currentImageKey && typeof component.props[currentImageKey] === "string"
       ? component.props[currentImageKey]
       : undefined;
+  const sectionStyle = getSectionStyleConfig(component.props);
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -415,6 +426,12 @@ export const EditableBlock: React.FC<EditableBlockProps> = ({
     onSave: saveNow,
   });
 
+  const handleSectionStyleChange = (nextStyle: SectionStyleConfig) => {
+    updateComponent(component.id, {
+      sectionStyle: nextStyle,
+    });
+  };
+
   if (disabled) {
     return (
       <div ref={setNodeRef}>
@@ -463,6 +480,17 @@ export const EditableBlock: React.FC<EditableBlockProps> = ({
         <button
           onClick={(e) => {
             e.stopPropagation();
+            selectComponent(component.id);
+            setShowSectionSettings((current) => !current);
+          }}
+          className="p-2 hover:bg-blue-50 rounded hover:text-blue-600 transition-colors"
+          title="Section settings"
+        >
+          <SlidersHorizontal size={20} />
+        </button>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
             if (confirm("Delete this component?")) {
               removeComponent(component.id);
             }
@@ -473,6 +501,15 @@ export const EditableBlock: React.FC<EditableBlockProps> = ({
           <Trash2 size={20} />
         </button>
       </div>
+
+      {isSectionSettingsVisible && (
+        <SectionSettingsPanel
+          value={sectionStyle}
+          onChange={handleSectionStyleChange}
+          onClose={() => setShowSectionSettings(false)}
+          onSave={saveNow}
+        />
+      )}
 
       {/* Component content with inline editing */}
       <div className="relative">
@@ -535,22 +572,30 @@ function renderComponent(
   const getNumberProp = (key: string, fallback = 0) =>
     typeof props[key] === "number" ? props[key] : fallback;
   const getBooleanProp = (key: string) => props[key] === true;
+  const sectionStyle = getSectionStyleConfig(props);
+  const getSectionContainer = (defaultMinHeight?: string) =>
+    buildSectionContainerStyle(sectionStyle, defaultMinHeight);
 
   // Hero Block
   if (type === "hero") {
     const gradientFrom = theme.colors.primary || "#3b82f6";
     const gradientTo = theme.colors.secondary || "#8b5cf6";
+    const backgroundStyle = buildSectionBackgroundStyle(sectionStyle, {
+      backgroundImage: getStringProp("backgroundImage")
+        ? `url(${getStringProp("backgroundImage")})`
+        : `linear-gradient(to bottom right, ${gradientFrom}, ${gradientTo})`,
+      backgroundSize: "cover",
+      backgroundPosition: "center",
+      backgroundRepeat: "no-repeat",
+    });
 
     return (
       <div
-        className="relative flex items-center justify-center min-h-[500px] text-white overflow-hidden"
+        className="relative flex items-center justify-center text-white overflow-hidden"
         onClick={() => editable && layoutEditor?.selectKey(null)}
         style={{
-          backgroundImage: getStringProp("backgroundImage")
-            ? `url(${getStringProp("backgroundImage")})`
-            : `linear-gradient(to bottom right, ${gradientFrom}, ${gradientTo})`,
-          backgroundSize: "cover",
-          backgroundPosition: "center",
+          ...getSectionContainer("500px"),
+          ...backgroundStyle,
         }}
       >
         <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" />
@@ -667,12 +712,18 @@ function renderComponent(
   if (type === "cta") {
     const bgColor =
       theme.colors.primary || getStringProp("backgroundColor", "#3b82f6");
+    const backgroundStyle = buildSectionBackgroundStyle(sectionStyle, {
+      backgroundColor: bgColor,
+    });
 
     return (
       <div
         className="py-16 px-6 text-center relative overflow-hidden"
         onClick={() => editable && layoutEditor?.selectKey(null)}
-        style={{ backgroundColor: bgColor }}
+        style={{
+          ...getSectionContainer(),
+          ...backgroundStyle,
+        }}
       >
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-0 left-1/4 w-96 h-96 bg-white rounded-full blur-3xl animate-float" />
@@ -777,12 +828,18 @@ function renderComponent(
     const images = Array.isArray(props.images)
       ? (props.images as GalleryImage[])
       : [];
+    const backgroundStyle = buildSectionBackgroundStyle(sectionStyle, {
+      backgroundColor: theme.colors.background || "#f9fafb",
+    });
 
     return (
       <div
         className="relative py-16 px-6"
         onClick={() => editable && layoutEditor?.selectKey(null)}
-        style={{ backgroundColor: theme.colors.background || "#f9fafb" }}
+        style={{
+          ...getSectionContainer(),
+          ...backgroundStyle,
+        }}
       >
         <SectionSnapGrid
           visible={Boolean(
@@ -869,11 +926,18 @@ function renderComponent(
       xl: "text-xl",
     };
 
+    const backgroundStyle = buildSectionBackgroundStyle(sectionStyle, {
+      backgroundColor: theme.colors.background || "#ffffff",
+    });
+
     return (
       <div
         className="relative py-8 px-6"
         onClick={() => editable && layoutEditor?.selectKey(null)}
-        style={{ backgroundColor: theme.colors.background || "#ffffff" }}
+        style={{
+          ...getSectionContainer(),
+          ...backgroundStyle,
+        }}
       >
         <SectionSnapGrid
           visible={Boolean(
@@ -916,10 +980,18 @@ function renderComponent(
 
   // About Block
   if (type === "about") {
+    const backgroundStyle = buildSectionBackgroundStyle(sectionStyle, {
+      backgroundColor: "#ffffff",
+    });
+
     return (
       <div
         className="relative py-16 px-6 bg-white"
         onClick={() => editable && layoutEditor?.selectKey(null)}
+        style={{
+          ...getSectionContainer(),
+          ...backgroundStyle,
+        }}
       >
         <SectionSnapGrid
           visible={Boolean(
@@ -1064,9 +1136,18 @@ function renderComponent(
     const articles = Array.isArray(props.articles)
       ? (props.articles as NewsArticle[])
       : [];
+    const backgroundStyle = buildSectionBackgroundStyle(sectionStyle, {
+      backgroundColor: "#f9fafb",
+    });
 
     return (
-      <div className="py-16 px-6 bg-gray-50">
+      <div
+        className="py-16 px-6 bg-gray-50"
+        style={{
+          ...getSectionContainer(),
+          ...backgroundStyle,
+        }}
+      >
         <div className="max-w-6xl mx-auto">
           <h2
             className="text-4xl font-bold text-center mb-12"
@@ -1206,9 +1287,18 @@ function renderComponent(
     const socialLinks = Array.isArray(props.socialLinks)
       ? (props.socialLinks as SocialLink[])
       : [];
+    const backgroundStyle = buildSectionBackgroundStyle(sectionStyle, {
+      backgroundColor: "#111827",
+    });
 
     return (
-      <footer className="bg-gray-900 text-white py-12 px-6">
+      <footer
+        className="bg-gray-900 text-white py-12 px-6"
+        style={{
+          ...getSectionContainer(),
+          ...backgroundStyle,
+        }}
+      >
         <div className="max-w-7xl mx-auto">
           <div className="grid md:grid-cols-3 gap-8 mb-8">
             {/* Company Info */}
@@ -1367,7 +1457,18 @@ function renderComponent(
   // Use block registry for other component types
   const BlockComponent = getBlockComponent(type);
   if (BlockComponent) {
-    return <BlockComponent {...props} />;
+    const backgroundStyle = buildSectionBackgroundStyle(sectionStyle);
+
+    return (
+      <div
+        style={{
+          ...getSectionContainer(),
+          ...backgroundStyle,
+        }}
+      >
+        <BlockComponent {...props} />
+      </div>
+    );
   }
 
   return (
