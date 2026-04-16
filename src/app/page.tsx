@@ -1,15 +1,15 @@
-'use client';
+"use client";
 
-import { Suspense, useState, useEffect } from 'react';
-import { Toolbar } from '@/components/editor/Toolbar';
-import { Canvas } from '@/components/editor/Canvas';
-import { OnboardingWizard } from '@/components/editor/OnboardingWizard';
-import { FloatingEditButton } from '@/components/editor/FloatingEditButton';
-import { ShareLink } from '@/components/editor/ShareLink';
-import { EnvironmentIndicator } from '@/components/editor/EnvironmentIndicator';
-import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
-import { useEditorStore } from '@/store/editor-store';
-import { getAllPages } from '@/lib/page-service';
+import { Suspense, useState, useEffect } from "react";
+import { Toolbar } from "@/components/editor/Toolbar";
+import { Canvas } from "@/components/editor/Canvas";
+import { OnboardingWizard } from "@/components/editor/OnboardingWizard";
+import { FloatingEditButton } from "@/components/editor/FloatingEditButton";
+import { ShareLink } from "@/components/editor/ShareLink";
+import { EnvironmentIndicator } from "@/components/editor/EnvironmentIndicator";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { useEditorStore } from "@/store/editor-store";
+import { getAllPages } from "@/lib/page-service";
 
 function EditorContent() {
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -39,12 +39,12 @@ function EditorContent() {
           // Load the page data if currentPageId exists but components are empty
           if (components.length === 0) {
             try {
-              const { loadPage } = await import('@/lib/page-service');
+              const { loadPage } = await import("@/lib/page-service");
               const loadPageToStore = useEditorStore.getState().loadPage;
               const page = await loadPage(currentPageId);
               loadPageToStore(page);
             } catch (error) {
-              console.error('Failed to load page:', error);
+              console.error("Failed to load page:", error);
               // If page no longer exists, prompt to select
               setShowSelectSite(true);
             }
@@ -53,7 +53,7 @@ function EditorContent() {
           setShowSelectSite(false);
         }
       } catch (error) {
-        console.error('Failed to check pages:', error);
+        console.error("Failed to check pages:", error);
         // On error, show onboarding as fallback
         setShowOnboarding(true);
         setShowSelectSite(false);
@@ -90,7 +90,10 @@ function EditorContent() {
       <div className="h-screen flex flex-col">
         <Toolbar onCreateNewSite={handleCreateNewSite} />
         <div className="flex-1 overflow-auto">
-          <OnboardingWizard isOpen={showOnboarding} onComplete={handleOnboardingComplete} />
+          <OnboardingWizard
+            isOpen={showOnboarding}
+            onComplete={handleOnboardingComplete}
+          />
         </div>
         <EnvironmentIndicator />
       </div>
@@ -103,14 +106,19 @@ function EditorContent() {
         <Toolbar onCreateNewSite={handleCreateNewSite} />
         <div className="flex-1 flex items-center justify-center bg-gray-50 overflow-auto">
           <div className="text-center max-w-md px-6">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">Welcome Back!</h2>
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">
+              Welcome Back!
+            </h2>
             <p className="text-gray-600 mb-8">
-              You have existing sites. Please select one from "My Sites" to continue editing, or create a new one.
+              You have existing sites. Please select one from &quot;My
+              Sites&quot; to continue editing, or create a new one.
             </p>
             <div className="flex flex-col gap-4">
               <button
                 onClick={() => {
-                  const toolbar = document.querySelector('[data-sites-button]') as HTMLButtonElement;
+                  const toolbar = document.querySelector(
+                    "[data-sites-button]",
+                  ) as HTMLButtonElement;
                   toolbar?.click();
                 }}
                 className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-semibold"
@@ -138,7 +146,10 @@ function EditorContent() {
         <Canvas />
       </div>
       <FloatingEditButton onShareClick={() => setShowShareLink(true)} />
-      <ShareLink isOpen={showShareLink} onClose={() => setShowShareLink(false)} />
+      <ShareLink
+        isOpen={showShareLink}
+        onClose={() => setShowShareLink(false)}
+      />
       <EnvironmentIndicator />
     </div>
   );
@@ -147,11 +158,13 @@ function EditorContent() {
 export default function Home() {
   return (
     <ProtectedRoute>
-      <Suspense fallback={
-        <div className="h-screen flex items-center justify-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
-        </div>
-      }>
+      <Suspense
+        fallback={
+          <div className="h-screen flex items-center justify-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
+          </div>
+        }
+      >
         <EditorContent />
       </Suspense>
     </ProtectedRoute>

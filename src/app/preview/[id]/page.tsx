@@ -1,10 +1,11 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
-import { loadPage } from '@/lib/page-service';
-import { PageConfig } from '@/lib/supabase-content';
-import { EditableBlock } from '@/components/editor/EditableBlock';
+import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
+import Link from "next/link";
+import { loadPage } from "@/lib/page-service";
+import { PageConfig } from "@/lib/supabase-content";
+import { EditableBlock } from "@/components/editor/EditableBlock";
 
 export default function PreviewPage() {
   const params = useParams();
@@ -19,8 +20,8 @@ export default function PreviewPage() {
         const pageData = await loadPage(pageId);
         setPage(pageData);
       } catch (err) {
-        console.error('Error loading page:', err);
-        setError('Failed to load page. Please check the link and try again.');
+        console.error("Error loading page:", err);
+        setError("Failed to load page. Please check the link and try again.");
       } finally {
         setLoading(false);
       }
@@ -45,14 +46,18 @@ export default function PreviewPage() {
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center max-w-md">
           <div className="text-6xl mb-4">🔍</div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Page Not Found</h1>
-          <p className="text-gray-600 mb-6">{error || 'The page you are looking for does not exist.'}</p>
-          <a
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            Page Not Found
+          </h1>
+          <p className="text-gray-600 mb-6">
+            {error || "The page you are looking for does not exist."}
+          </p>
+          <Link
             href="/"
             className="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
             Go to Homepage
-          </a>
+          </Link>
         </div>
       </div>
     );
@@ -66,12 +71,12 @@ export default function PreviewPage() {
           <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
           <span className="text-sm font-medium">{page.name}</span>
         </div>
-        <a
+        <Link
           href="/"
           className="text-sm px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
         >
           Create Your Own
-        </a>
+        </Link>
       </div>
 
       {/* Page Content */}

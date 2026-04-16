@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { Plus, Settings, Trash2 } from 'lucide-react';
-import { ComponentPicker } from './ComponentPicker';
+import React, { useState } from "react";
+import { Plus, Settings, Trash2 } from "lucide-react";
+import { ComponentPicker } from "./ComponentPicker";
 
 type SectionLayout = {
   columns: number;
@@ -21,15 +21,18 @@ type SectionProps = {
   layout: SectionLayout;
   style: SectionStyle;
   children?: React.ReactNode;
-  onAddSection: (position: 'above' | 'below') => void;
-  onAddComponent: (slotIndex: number, componentType: string, defaultProps: any) => void;
+  onAddSection: (position: "above" | "below") => void;
+  onAddComponent: (
+    slotIndex: number,
+    componentType: string,
+    defaultProps: Record<string, unknown>,
+  ) => void;
   onDelete: () => void;
   onUpdateLayout: (layout: SectionLayout) => void;
   onUpdateStyle: (style: SectionStyle) => void;
 };
 
 export const Section: React.FC<SectionProps> = ({
-  id,
   layout,
   style,
   children,
@@ -62,7 +65,7 @@ export const Section: React.FC<SectionProps> = ({
       {isHovered && (
         <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
           <button
-            onClick={() => onAddSection('above')}
+            onClick={() => onAddSection("above")}
             className="flex items-center gap-1 px-3 py-1 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 shadow-lg"
           >
             <Plus size={14} />
@@ -74,7 +77,7 @@ export const Section: React.FC<SectionProps> = ({
       {/* Section Container */}
       <div
         className={`relative border-2 transition-all ${
-          isHovered ? 'border-blue-500 border-dashed' : 'border-transparent'
+          isHovered ? "border-blue-500 border-dashed" : "border-transparent"
         }`}
         style={{
           padding: style.padding,
@@ -118,7 +121,12 @@ export const Section: React.FC<SectionProps> = ({
                     min="1"
                     max="12"
                     value={layout.columns}
-                    onChange={(e) => onUpdateLayout({ ...layout, columns: parseInt(e.target.value) })}
+                    onChange={(e) =>
+                      onUpdateLayout({
+                        ...layout,
+                        columns: parseInt(e.target.value),
+                      })
+                    }
                     className="w-full px-2 py-1 border rounded"
                   />
                 </div>
@@ -129,7 +137,12 @@ export const Section: React.FC<SectionProps> = ({
                     min="1"
                     max="12"
                     value={layout.rows}
-                    onChange={(e) => onUpdateLayout({ ...layout, rows: parseInt(e.target.value) })}
+                    onChange={(e) =>
+                      onUpdateLayout({
+                        ...layout,
+                        rows: parseInt(e.target.value),
+                      })
+                    }
                     className="w-full px-2 py-1 border rounded"
                   />
                 </div>
@@ -139,10 +152,14 @@ export const Section: React.FC<SectionProps> = ({
             {/* Style Controls */}
             <div className="space-y-3">
               <div>
-                <label className="block text-sm font-medium mb-1">Padding</label>
+                <label className="block text-sm font-medium mb-1">
+                  Padding
+                </label>
                 <select
                   value={style.padding}
-                  onChange={(e) => onUpdateStyle({ ...style, padding: e.target.value })}
+                  onChange={(e) =>
+                    onUpdateStyle({ ...style, padding: e.target.value })
+                  }
                   className="w-full px-2 py-1 border rounded"
                 >
                   <option value="0">None</option>
@@ -156,7 +173,9 @@ export const Section: React.FC<SectionProps> = ({
                 <label className="block text-sm font-medium mb-1">Margin</label>
                 <select
                   value={style.margin}
-                  onChange={(e) => onUpdateStyle({ ...style, margin: e.target.value })}
+                  onChange={(e) =>
+                    onUpdateStyle({ ...style, margin: e.target.value })
+                  }
                   className="w-full px-2 py-1 border rounded"
                 >
                   <option value="0">None</option>
@@ -167,11 +186,15 @@ export const Section: React.FC<SectionProps> = ({
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">Background</label>
+                <label className="block text-sm font-medium mb-1">
+                  Background
+                </label>
                 <input
                   type="color"
                   value={style.backgroundColor}
-                  onChange={(e) => onUpdateStyle({ ...style, backgroundColor: e.target.value })}
+                  onChange={(e) =>
+                    onUpdateStyle({ ...style, backgroundColor: e.target.value })
+                  }
                   className="w-full h-10 rounded"
                 />
               </div>
@@ -218,7 +241,7 @@ export const Section: React.FC<SectionProps> = ({
       {isHovered && (
         <div className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
           <button
-            onClick={() => onAddSection('below')}
+            onClick={() => onAddSection("below")}
             className="flex items-center gap-1 px-3 py-1 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 shadow-lg"
           >
             <Plus size={14} />

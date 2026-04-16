@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { signIn } from '@/lib/auth-service';
-import { Eye, EyeOff, Loader2 } from 'lucide-react';
+import React, { useState } from "react";
+import { signIn } from "@/lib/auth-service";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 
 type LoginFormProps = {
   onSuccess: () => void;
@@ -16,31 +16,31 @@ export const LoginForm: React.FC<LoginFormProps> = ({
   onForgotPassword,
 }) => {
   const [formData, setFormData] = useState({
-    email: '',
-    password: '',
+    email: "",
+    password: "",
   });
 
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
 
     // Clear error when user types
-    if (error) setError('');
+    if (error) setError("");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError("");
 
     if (!formData.email || !formData.password) {
-      setError('Please enter your email and password');
+      setError("Please enter your email and password");
       return;
     }
 
@@ -52,11 +52,11 @@ export const LoginForm: React.FC<LoginFormProps> = ({
       if (result.success) {
         onSuccess();
       } else {
-        setError(result.error || 'Invalid email or password');
+        setError(result.error || "Invalid email or password");
       }
     } catch (err) {
-      setError('An unexpected error occurred. Please try again.');
-      console.error('Login error:', err);
+      setError("An unexpected error occurred. Please try again.");
+      console.error("Login error:", err);
     } finally {
       setLoading(false);
     }
@@ -65,7 +65,9 @@ export const LoginForm: React.FC<LoginFormProps> = ({
   return (
     <div className="w-full max-w-md mx-auto p-6 bg-white rounded-lg shadow-lg">
       <div className="mb-6 text-center">
-        <p className="text-sm font-semibold uppercase tracking-[0.2em] text-red-600">Website Builder</p>
+        <p className="text-sm font-semibold uppercase tracking-[0.2em] text-red-600">
+          Website Builder
+        </p>
         <h2 className="text-2xl font-bold text-gray-900 mt-2">Sign In</h2>
       </div>
 
@@ -79,7 +81,10 @@ export const LoginForm: React.FC<LoginFormProps> = ({
 
         {/* Email */}
         <div>
-          <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+          <label
+            htmlFor="email"
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
             Email Address
           </label>
           <input
@@ -96,12 +101,15 @@ export const LoginForm: React.FC<LoginFormProps> = ({
 
         {/* Password */}
         <div>
-          <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+          <label
+            htmlFor="password"
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
             Password
           </label>
           <div className="relative">
             <input
-              type={showPassword ? 'text' : 'password'}
+              type={showPassword ? "text" : "password"}
               id="password"
               name="password"
               value={formData.password}
@@ -143,13 +151,13 @@ export const LoginForm: React.FC<LoginFormProps> = ({
               Signing In...
             </>
           ) : (
-            'Sign In'
+            "Sign In"
           )}
         </button>
 
         {/* Switch to Register */}
         <div className="text-center text-sm text-gray-600 pt-4 border-t">
-          Don't have an account?{' '}
+          Don&apos;t have an account?{" "}
           <button
             type="button"
             onClick={onSwitchToRegister}

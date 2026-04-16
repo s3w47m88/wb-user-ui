@@ -1,38 +1,89 @@
-import { HeroBlock, heroBlockConfig } from '@/components/blocks/HeroBlock';
-import { CTABlock, ctaBlockConfig } from '@/components/blocks/CTABlock';
-import { GalleryBlock, galleryBlockConfig } from '@/components/blocks/GalleryBlock';
-import { TextBlock, textBlockConfig } from '@/components/blocks/TextBlock';
-import { FooterBlock, footerBlockConfig } from '@/components/blocks/FooterBlock';
-import { DisclaimerBlock, disclaimerBlockConfig } from '@/components/blocks/DisclaimerBlock';
-import { VolunteerFormBlock, volunteerFormBlockConfig } from '@/components/blocks/VolunteerFormBlock';
-import { ContactFormBlock, contactFormBlockConfig } from '@/components/blocks/ContactFormBlock';
-import { AboutBlock, aboutBlockConfig } from '@/components/blocks/AboutBlock';
-import { NewsBlock, newsBlockConfig } from '@/components/blocks/NewsBlock';
-import { GridBlock, gridBlockConfig } from '@/components/blocks/GridBlock';
-import { ButtonComponent, buttonComponentConfig } from '@/components/blocks/ButtonComponent';
-import { ImageComponent, imageComponentConfig } from '@/components/blocks/ImageComponent';
-import { HeadingComponent, headingComponentConfig } from '@/components/blocks/HeadingComponent';
-import { ParagraphComponent, paragraphComponentConfig } from '@/components/blocks/ParagraphComponent';
-import { DividerComponent, dividerComponentConfig } from '@/components/blocks/DividerComponent';
-import { VideoComponent, videoComponentConfig } from '@/components/blocks/VideoComponent';
-import { LinkComponent, linkComponentConfig } from '@/components/blocks/LinkComponent';
-import { SpacerComponent, spacerComponentConfig } from '@/components/blocks/SpacerComponent';
-import { ListComponent, listComponentConfig } from '@/components/blocks/ListComponent';
-import { BadgeComponent, badgeComponentConfig } from '@/components/blocks/BadgeComponent';
-import { QuoteComponent, quoteComponentConfig } from '@/components/blocks/QuoteComponent';
+import { HeroBlock, heroBlockConfig } from "@/components/blocks/HeroBlock";
+import { CTABlock, ctaBlockConfig } from "@/components/blocks/CTABlock";
+import {
+  GalleryBlock,
+  galleryBlockConfig,
+} from "@/components/blocks/GalleryBlock";
+import { TextBlock, textBlockConfig } from "@/components/blocks/TextBlock";
+import {
+  FooterBlock,
+  footerBlockConfig,
+} from "@/components/blocks/FooterBlock";
+import {
+  DisclaimerBlock,
+  disclaimerBlockConfig,
+} from "@/components/blocks/DisclaimerBlock";
+import {
+  VolunteerFormBlock,
+  volunteerFormBlockConfig,
+} from "@/components/blocks/VolunteerFormBlock";
+import {
+  ContactFormBlock,
+  contactFormBlockConfig,
+} from "@/components/blocks/ContactFormBlock";
+import { AboutBlock, aboutBlockConfig } from "@/components/blocks/AboutBlock";
+import { NewsBlock, newsBlockConfig } from "@/components/blocks/NewsBlock";
+import { GridBlock, gridBlockConfig } from "@/components/blocks/GridBlock";
+import {
+  ButtonComponent,
+  buttonComponentConfig,
+} from "@/components/blocks/ButtonComponent";
+import {
+  ImageComponent,
+  imageComponentConfig,
+} from "@/components/blocks/ImageComponent";
+import {
+  HeadingComponent,
+  headingComponentConfig,
+} from "@/components/blocks/HeadingComponent";
+import {
+  ParagraphComponent,
+  paragraphComponentConfig,
+} from "@/components/blocks/ParagraphComponent";
+import {
+  DividerComponent,
+  dividerComponentConfig,
+} from "@/components/blocks/DividerComponent";
+import {
+  VideoComponent,
+  videoComponentConfig,
+} from "@/components/blocks/VideoComponent";
+import {
+  LinkComponent,
+  linkComponentConfig,
+} from "@/components/blocks/LinkComponent";
+import {
+  SpacerComponent,
+  spacerComponentConfig,
+} from "@/components/blocks/SpacerComponent";
+import {
+  ListComponent,
+  listComponentConfig,
+} from "@/components/blocks/ListComponent";
+import {
+  BadgeComponent,
+  badgeComponentConfig,
+} from "@/components/blocks/BadgeComponent";
+import {
+  QuoteComponent,
+  quoteComponentConfig,
+} from "@/components/blocks/QuoteComponent";
 
 export type BlockConfig = {
   type: string;
   name: string;
   category: string;
-  defaultProps: Record<string, any>;
-  propsSchema: Record<string, any>;
+  defaultProps: Record<string, unknown>;
+  propsSchema: Record<string, unknown>;
   thumbnail?: string; // Optional thumbnail SVG or data URI
 };
 
-export type BlockComponent = React.FC<any>;
+export type BlockComponent = React.ElementType;
 
-export const blockRegistry: Record<string, { component: BlockComponent; config: BlockConfig }> = {
+export const blockRegistry: Record<
+  string,
+  { component: BlockComponent; config: BlockConfig }
+> = {
   // Sections
   hero: { component: HeroBlock, config: heroBlockConfig },
   cta: { component: CTABlock, config: ctaBlockConfig },
@@ -46,7 +97,10 @@ export const blockRegistry: Record<string, { component: BlockComponent; config: 
   button: { component: ButtonComponent, config: buttonComponentConfig },
   image: { component: ImageComponent, config: imageComponentConfig },
   heading: { component: HeadingComponent, config: headingComponentConfig },
-  paragraph: { component: ParagraphComponent, config: paragraphComponentConfig },
+  paragraph: {
+    component: ParagraphComponent,
+    config: paragraphComponentConfig,
+  },
   divider: { component: DividerComponent, config: dividerComponentConfig },
   video: { component: VideoComponent, config: videoComponentConfig },
   link: { component: LinkComponent, config: linkComponentConfig },
@@ -56,8 +110,14 @@ export const blockRegistry: Record<string, { component: BlockComponent; config: 
   quote: { component: QuoteComponent, config: quoteComponentConfig },
   text: { component: TextBlock, config: textBlockConfig },
   disclaimer: { component: DisclaimerBlock, config: disclaimerBlockConfig },
-  'volunteer-form': { component: VolunteerFormBlock, config: volunteerFormBlockConfig },
-  'contact-form': { component: ContactFormBlock, config: contactFormBlockConfig },
+  "volunteer-form": {
+    component: VolunteerFormBlock,
+    config: volunteerFormBlockConfig,
+  },
+  "contact-form": {
+    component: ContactFormBlock,
+    config: contactFormBlockConfig,
+  },
 };
 
 export const getBlockComponent = (type: string): BlockComponent | null => {

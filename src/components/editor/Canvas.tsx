@@ -1,28 +1,40 @@
-'use client';
+"use client";
 
-import React, { useMemo, useState } from 'react';
-import { DndContext, DragEndEvent, closestCenter } from '@dnd-kit/core';
-import { SortableContext, arrayMove, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { Plus } from 'lucide-react';
-import { EditableBlock } from './EditableBlock';
-import { ComponentPicker } from './ComponentPicker';
-import { useEditorStore } from '@/store/editor-store';
+import React, { useMemo, useState } from "react";
+import { DndContext, DragEndEvent, closestCenter } from "@dnd-kit/core";
+import {
+  SortableContext,
+  arrayMove,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { Plus } from "lucide-react";
+import { EditableBlock } from "./EditableBlock";
+import { ComponentPicker } from "./ComponentPicker";
+import { useEditorStore } from "@/store/editor-store";
+import { ComponentData } from "@/lib/supabase-content";
 
 export const Canvas: React.FC = () => {
-  const { components, isEditing, addComponent, reorderComponents } = useEditorStore();
+  const { components, isEditing, reorderComponents } = useEditorStore();
   const [showSectionPicker, setShowSectionPicker] = useState(false);
   const [insertPosition, setInsertPosition] = useState<number | null>(null);
+  const sortedComponents = useMemo(
+    () => [...components].sort((a, b) => a.order - b.order),
+    [components],
+  );
 
   const handleAddSectionClick = (position: number) => {
     setInsertPosition(position);
     setShowSectionPicker(true);
   };
 
-  const handleSelectSection = (componentType: string, defaultProps: any) => {
+  const handleSelectSection = (
+    componentType: string,
+    defaultProps: Record<string, unknown>,
+  ) => {
     if (insertPosition === null) return;
 
     // Create new component
-    const newComponent = {
+    const newComponent: ComponentData = {
       id: crypto.randomUUID(),
       type: componentType,
       props: defaultProps,
@@ -57,23 +69,21 @@ export const Canvas: React.FC = () => {
     );
   }
 
-  // Editing mode
-  const sortedComponents = useMemo(
-    () => [...components].sort((a, b) => a.order - b.order),
-    [components]
-  );
-
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
 
-    const oldIndex = sortedComponents.findIndex((comp) => comp.id === active.id);
+    const oldIndex = sortedComponents.findIndex(
+      (comp) => comp.id === active.id,
+    );
     const newIndex = sortedComponents.findIndex((comp) => comp.id === over.id);
     if (oldIndex < 0 || newIndex < 0) return;
 
-    const reorderedComponents = arrayMove(sortedComponents, oldIndex, newIndex).map(
-      (comp, index) => ({ ...comp, order: index })
-    );
+    const reorderedComponents = arrayMove(
+      sortedComponents,
+      oldIndex,
+      newIndex,
+    ).map((comp, index) => ({ ...comp, order: index }));
     reorderComponents(reorderedComponents);
   };
 
@@ -82,8 +92,12 @@ export const Canvas: React.FC = () => {
       {/* Empty state */}
       {components.length === 0 ? (
         <div className="text-center py-20">
-          <p className="text-xl font-semibold text-gray-700 mb-4">Start building your page</p>
-          <p className="text-gray-500 mb-8">Add your first section or choose a template</p>
+          <p className="text-xl font-semibold text-gray-700 mb-4">
+            Start building your page
+          </p>
+          <p className="text-gray-500 mb-8">
+            Add your first section or choose a template
+          </p>
           <button
             onClick={() => handleAddSectionClick(0)}
             className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-lg transition-all"
@@ -93,7 +107,10 @@ export const Canvas: React.FC = () => {
           </button>
         </div>
       ) : (
-        <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <DndContext
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
           <SortableContext
             items={sortedComponents.map((component) => component.id)}
             strategy={verticalListSortingStrategy}
@@ -106,7 +123,9 @@ export const Canvas: React.FC = () => {
               {sortedComponents.map((component, index) => (
                 <React.Fragment key={component.id}>
                   <EditableBlock component={component} />
-                  <SectionDivider onClick={() => handleAddSectionClick(index + 1)} />
+                  <SectionDivider
+                    onClick={() => handleAddSectionClick(index + 1)}
+                  />
                 </React.Fragment>
               ))}
             </div>
@@ -142,7 +161,7 @@ const SectionDivider: React.FC<{ onClick: () => void }> = ({ onClick }) => {
       {/* Hover line and button */}
       <div
         className={`transition-all duration-200 ${
-          isHovered ? 'opacity-100' : 'opacity-0'
+          isHovered ? "opacity-100" : "opacity-0"
         }`}
       >
         <div className="w-full h-0.5 bg-blue-400 relative">

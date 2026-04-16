@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import React, { useState, useRef } from 'react';
-import { X, Upload, Link as LinkIcon, Wand2 } from 'lucide-react';
+import React, { useState, useRef } from "react";
+import { X, Upload, Link as LinkIcon, Wand2 } from "lucide-react";
 
 type ImageUploaderProps = {
   isOpen: boolean;
@@ -16,10 +16,10 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
   onImageSelected,
   currentImageUrl,
 }) => {
-  const [imageUrl, setImageUrl] = useState(currentImageUrl || '');
-  const [previewUrl, setPreviewUrl] = useState(currentImageUrl || '');
+  const [imageUrl, setImageUrl] = useState(currentImageUrl || "");
+  const [previewUrl, setPreviewUrl] = useState(currentImageUrl || "");
   const [isProcessing, setIsProcessing] = useState(false);
-  const [activeTab, setActiveTab] = useState<'upload' | 'url' | 'ai'>('upload');
+  const [activeTab, setActiveTab] = useState<"upload" | "url" | "ai">("upload");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (!isOpen) return null;
@@ -32,8 +32,8 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
 
     try {
       // Validate file type
-      if (!file.type.startsWith('image/')) {
-        alert('Please select an image file');
+      if (!file.type.startsWith("image/")) {
+        alert("Please select an image file");
         return;
       }
 
@@ -43,8 +43,8 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
         const img = new Image();
         img.onload = async () => {
           // Create canvas for resizing
-          const canvas = document.createElement('canvas');
-          const ctx = canvas.getContext('2d');
+          const canvas = document.createElement("canvas");
+          const ctx = canvas.getContext("2d");
           if (!ctx) return;
 
           // Calculate new dimensions (max 1920x1080)
@@ -76,16 +76,16 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
               setImageUrl(url);
               setIsProcessing(false);
             },
-            'image/webp',
-            0.85
+            "image/webp",
+            0.85,
           );
         };
         img.src = event.target?.result as string;
       };
       reader.readAsDataURL(file);
     } catch (error) {
-      console.error('Error processing image:', error);
-      alert('Failed to process image');
+      console.error("Error processing image:", error);
+      alert("Failed to process image");
       setIsProcessing(false);
     }
   };
@@ -104,8 +104,8 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
   };
 
   const handleClose = () => {
-    setImageUrl('');
-    setPreviewUrl('');
+    setImageUrl("");
+    setPreviewUrl("");
     onClose();
   };
 
@@ -115,7 +115,10 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
         {/* Header */}
         <div className="border-b border-gray-200 px-6 py-4 flex items-center justify-between">
           <h2 className="text-xl font-bold">Upload Image</h2>
-          <button onClick={handleClose} className="text-gray-500 hover:text-gray-700">
+          <button
+            onClick={handleClose}
+            className="text-gray-500 hover:text-gray-700"
+          >
             <X size={20} />
           </button>
         </div>
@@ -124,33 +127,33 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
         <div className="border-b border-gray-200">
           <div className="flex px-6">
             <button
-              onClick={() => setActiveTab('upload')}
+              onClick={() => setActiveTab("upload")}
               className={`px-4 py-3 font-medium border-b-2 transition-colors ${
-                activeTab === 'upload'
-                  ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
+                activeTab === "upload"
+                  ? "border-blue-600 text-blue-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700"
               }`}
             >
               <Upload className="inline mr-2" size={16} />
               Upload File
             </button>
             <button
-              onClick={() => setActiveTab('url')}
+              onClick={() => setActiveTab("url")}
               className={`px-4 py-3 font-medium border-b-2 transition-colors ${
-                activeTab === 'url'
-                  ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
+                activeTab === "url"
+                  ? "border-blue-600 text-blue-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700"
               }`}
             >
               <LinkIcon className="inline mr-2" size={16} />
               Image URL
             </button>
             <button
-              onClick={() => setActiveTab('ai')}
+              onClick={() => setActiveTab("ai")}
               className={`px-4 py-3 font-medium border-b-2 transition-colors ${
-                activeTab === 'ai'
-                  ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
+                activeTab === "ai"
+                  ? "border-blue-600 text-blue-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700"
               }`}
             >
               <Wand2 className="inline mr-2" size={16} />
@@ -161,7 +164,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
 
         {/* Content */}
         <div className="p-6">
-          {activeTab === 'upload' && (
+          {activeTab === "upload" && (
             <div className="space-y-4">
               <div
                 className="border-2 border-dashed border-gray-300 rounded-lg p-12 text-center hover:border-blue-500 transition-colors cursor-pointer"
@@ -175,7 +178,8 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
                   PNG, JPG, GIF up to 10MB
                 </p>
                 <p className="text-xs text-gray-400 mt-2">
-                  Images will be automatically resized and converted to WebP for optimal performance
+                  Images will be automatically resized and converted to WebP for
+                  optimal performance
                 </p>
               </div>
               <input
@@ -189,7 +193,9 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
               {isProcessing && (
                 <div className="flex items-center justify-center py-8">
                   <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
-                  <span className="ml-3 text-gray-600">Processing image...</span>
+                  <span className="ml-3 text-gray-600">
+                    Processing image...
+                  </span>
                 </div>
               )}
 
@@ -204,7 +210,8 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
                   </div>
                   <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                     <p className="text-sm text-green-800">
-                      ✓ Image optimized: Resized to fit 1920x1080 and converted to WebP format
+                      ✓ Image optimized: Resized to fit 1920x1080 and converted
+                      to WebP format
                     </p>
                   </div>
                 </div>
@@ -212,7 +219,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
             </div>
           )}
 
-          {activeTab === 'url' && (
+          {activeTab === "url" && (
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -240,8 +247,8 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
                     alt="Preview"
                     className="w-full h-full object-contain"
                     onError={() => {
-                      alert('Failed to load image. Please check the URL.');
-                      setPreviewUrl('');
+                      alert("Failed to load image. Please check the URL.");
+                      setPreviewUrl("");
                     }}
                   />
                 </div>
@@ -249,15 +256,18 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
             </div>
           )}
 
-          {activeTab === 'ai' && (
+          {activeTab === "ai" && (
             <div className="space-y-4">
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <p className="text-sm text-blue-800">
-                  🚀 AI image generation is available! Click the "Generate with AI" button in the property panel to create custom images using text prompts.
+                  🚀 AI image generation is available! Click the &quot;Generate
+                  with AI&quot; button in the property panel to create custom
+                  images using text prompts.
                 </p>
               </div>
               <p className="text-sm text-gray-600">
-                This feature uses Stable Diffusion to generate high-quality images based on your descriptions.
+                This feature uses Stable Diffusion to generate high-quality
+                images based on your descriptions.
               </p>
             </div>
           )}

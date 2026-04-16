@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef } from "react";
 import {
   Bold,
   Italic,
@@ -15,7 +15,7 @@ import {
   Link as LinkIcon,
   Type,
   Palette,
-} from 'lucide-react';
+} from "lucide-react";
 
 type FloatingTextToolbarProps = {
   isVisible: boolean;
@@ -27,10 +27,38 @@ export const FloatingTextToolbar: React.FC<FloatingTextToolbarProps> = ({
   onClose,
 }) => {
   const [position, setPosition] = useState({ top: 0, left: 0 });
-  const [fontSize, setFontSize] = useState('16');
-  const [textColor, setTextColor] = useState('#000000');
-  const [bgColor, setBgColor] = useState('#ffffff');
+  const [fontSize, setFontSize] = useState("16");
+  const [textColor, setTextColor] = useState("#000000");
+  const [bgColor, setBgColor] = useState("#ffffff");
   const toolbarRef = useRef<HTMLDivElement>(null);
+
+  function updatePosition() {
+    const selection = window.getSelection();
+    const activeElement = document.activeElement;
+
+    if (
+      selection &&
+      selection.rangeCount > 0 &&
+      selection.toString().length > 0
+    ) {
+      const range = selection.getRangeAt(0);
+      const rect = range.getBoundingClientRect();
+
+      setPosition({
+        top: rect.top + window.scrollY - 70,
+        left: rect.left + window.scrollX + rect.width / 2,
+      });
+    } else if (
+      activeElement &&
+      activeElement.getAttribute("contenteditable") === "true"
+    ) {
+      const rect = activeElement.getBoundingClientRect();
+      setPosition({
+        top: rect.top + window.scrollY - 70,
+        left: rect.left + window.scrollX + rect.width / 2,
+      });
+    }
+  }
 
   useEffect(() => {
     if (isVisible) {
@@ -39,28 +67,20 @@ export const FloatingTextToolbar: React.FC<FloatingTextToolbarProps> = ({
     }
   }, [isVisible]);
 
-  const updatePosition = () => {
-    const selection = window.getSelection();
-    const activeElement = document.activeElement;
-
-    if (selection && selection.rangeCount > 0 && selection.toString().length > 0) {
-      // Position based on text selection
-      const range = selection.getRangeAt(0);
-      const rect = range.getBoundingClientRect();
-
-      setPosition({
-        top: rect.top + window.scrollY - 70,
-        left: rect.left + window.scrollX + rect.width / 2,
-      });
-    } else if (activeElement && activeElement.getAttribute('contenteditable') === 'true') {
-      // Position relative to the focused contenteditable element
-      const rect = activeElement.getBoundingClientRect();
-      setPosition({
-        top: rect.top + window.scrollY - 70,
-        left: rect.left + window.scrollX + rect.width / 2,
-      });
+  useEffect(() => {
+    if (!isVisible) {
+      return;
     }
-  };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isVisible, onClose]);
 
   const execCommand = (command: string, value?: string) => {
     document.execCommand(command, false, value);
@@ -71,7 +91,7 @@ export const FloatingTextToolbar: React.FC<FloatingTextToolbarProps> = ({
     const selection = window.getSelection();
     if (selection && selection.rangeCount > 0) {
       const range = selection.getRangeAt(0);
-      const span = document.createElement('span');
+      const span = document.createElement("span");
       span.style.fontSize = `${size}px`;
       range.surroundContents(span);
     }
@@ -79,18 +99,18 @@ export const FloatingTextToolbar: React.FC<FloatingTextToolbarProps> = ({
 
   const handleTextColor = (color: string) => {
     setTextColor(color);
-    execCommand('foreColor', color);
+    execCommand("foreColor", color);
   };
 
   const handleBgColor = (color: string) => {
     setBgColor(color);
-    execCommand('backColor', color);
+    execCommand("backColor", color);
   };
 
   const handleLink = () => {
-    const url = prompt('Enter URL:');
+    const url = prompt("Enter URL:");
     if (url) {
-      execCommand('createLink', url);
+      execCommand("createLink", url);
     }
   };
 
@@ -103,35 +123,35 @@ export const FloatingTextToolbar: React.FC<FloatingTextToolbarProps> = ({
       style={{
         top: `${position.top}px`,
         left: `${position.left}px`,
-        transform: 'translateX(-50%)',
+        transform: "translateX(-50%)",
       }}
       onMouseDown={(e) => e.preventDefault()} // Prevent losing selection
     >
       {/* Text Formatting */}
       <div className="flex items-center gap-1 border-r border-gray-200 pr-2">
         <button
-          onClick={() => execCommand('bold')}
+          onClick={() => execCommand("bold")}
           className="p-2 hover:bg-gray-100 rounded transition-colors"
           title="Bold (Ctrl+B)"
         >
           <Bold size={16} />
         </button>
         <button
-          onClick={() => execCommand('italic')}
+          onClick={() => execCommand("italic")}
           className="p-2 hover:bg-gray-100 rounded transition-colors"
           title="Italic (Ctrl+I)"
         >
           <Italic size={16} />
         </button>
         <button
-          onClick={() => execCommand('underline')}
+          onClick={() => execCommand("underline")}
           className="p-2 hover:bg-gray-100 rounded transition-colors"
           title="Underline (Ctrl+U)"
         >
           <Underline size={16} />
         </button>
         <button
-          onClick={() => execCommand('strikeThrough')}
+          onClick={() => execCommand("strikeThrough")}
           className="p-2 hover:bg-gray-100 rounded transition-colors"
           title="Strikethrough"
         >
@@ -184,28 +204,28 @@ export const FloatingTextToolbar: React.FC<FloatingTextToolbarProps> = ({
       {/* Alignment */}
       <div className="flex items-center gap-1 border-r border-gray-200 pr-2">
         <button
-          onClick={() => execCommand('justifyLeft')}
+          onClick={() => execCommand("justifyLeft")}
           className="p-2 hover:bg-gray-100 rounded transition-colors"
           title="Align Left"
         >
           <AlignLeft size={16} />
         </button>
         <button
-          onClick={() => execCommand('justifyCenter')}
+          onClick={() => execCommand("justifyCenter")}
           className="p-2 hover:bg-gray-100 rounded transition-colors"
           title="Align Center"
         >
           <AlignCenter size={16} />
         </button>
         <button
-          onClick={() => execCommand('justifyRight')}
+          onClick={() => execCommand("justifyRight")}
           className="p-2 hover:bg-gray-100 rounded transition-colors"
           title="Align Right"
         >
           <AlignRight size={16} />
         </button>
         <button
-          onClick={() => execCommand('justifyFull')}
+          onClick={() => execCommand("justifyFull")}
           className="p-2 hover:bg-gray-100 rounded transition-colors"
           title="Justify"
         >
@@ -216,14 +236,14 @@ export const FloatingTextToolbar: React.FC<FloatingTextToolbarProps> = ({
       {/* Lists */}
       <div className="flex items-center gap-1 border-r border-gray-200 pr-2">
         <button
-          onClick={() => execCommand('insertUnorderedList')}
+          onClick={() => execCommand("insertUnorderedList")}
           className="p-2 hover:bg-gray-100 rounded transition-colors"
           title="Bullet List"
         >
           <List size={16} />
         </button>
         <button
-          onClick={() => execCommand('insertOrderedList')}
+          onClick={() => execCommand("insertOrderedList")}
           className="p-2 hover:bg-gray-100 rounded transition-colors"
           title="Numbered List"
         >

@@ -1,14 +1,14 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { Plus, Minus, Settings, Trash2 } from 'lucide-react';
-import { ComponentPicker } from '../editor/ComponentPicker';
-import { getBlockComponent } from '@/lib/block-registry';
+import React, { useState } from "react";
+import { Plus, Minus, Settings, Trash2 } from "lucide-react";
+import { ComponentPicker } from "../editor/ComponentPicker";
+import { getBlockComponent } from "@/lib/block-registry";
 
 export type GridCell = {
   id: string;
   componentType?: string;
-  componentProps?: Record<string, any>;
+  componentProps?: Record<string, unknown>;
 };
 
 export type GridBlockProps = {
@@ -29,7 +29,7 @@ export const GridBlock: React.FC<GridBlockProps> = ({
   columns,
   cells,
   gap = 16,
-  padding = '2rem',
+  padding = "2rem",
   editable = false,
   onUpdateCells,
   onUpdateGrid,
@@ -38,14 +38,18 @@ export const GridBlock: React.FC<GridBlockProps> = ({
   const [localRows, setLocalRows] = useState(rows);
   const [localColumns, setLocalColumns] = useState(columns);
   const [showComponentPicker, setShowComponentPicker] = useState(false);
-  const [selectedCellIndex, setSelectedCellIndex] = useState<number | null>(null);
+  const [selectedCellIndex, setSelectedCellIndex] = useState<number | null>(
+    null,
+  );
 
   // Get cell for specific position or create empty one
   const getCell = (rowIndex: number, colIndex: number): GridCell => {
     const cellIndex = rowIndex * columns + colIndex;
-    return cells[cellIndex] || {
-      id: `cell-${rowIndex}-${colIndex}`,
-    };
+    return (
+      cells[cellIndex] || {
+        id: `cell-${rowIndex}-${colIndex}`,
+      }
+    );
   };
 
   const handleAddComponent = (rowIndex: number, colIndex: number) => {
@@ -54,7 +58,10 @@ export const GridBlock: React.FC<GridBlockProps> = ({
     setShowComponentPicker(true);
   };
 
-  const handleSelectComponent = (componentType: string, componentProps: any) => {
+  const handleSelectComponent = (
+    componentType: string,
+    componentProps: Record<string, unknown>,
+  ) => {
     if (selectedCellIndex === null || !onUpdateCells) return;
 
     const updatedCells = [...cells];
@@ -152,7 +159,9 @@ export const GridBlock: React.FC<GridBlockProps> = ({
             </div>
 
             <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-2">
-              <span className="text-sm font-medium text-gray-700">Columns:</span>
+              <span className="text-sm font-medium text-gray-700">
+                Columns:
+              </span>
               <button
                 onClick={handleRemoveColumn}
                 className="p-1 bg-white rounded hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -160,7 +169,9 @@ export const GridBlock: React.FC<GridBlockProps> = ({
               >
                 <Minus size={16} className="text-red-600" />
               </button>
-              <span className="text-sm font-bold w-8 text-center">{columns}</span>
+              <span className="text-sm font-bold w-8 text-center">
+                {columns}
+              </span>
               <button
                 onClick={handleAddColumn}
                 className="p-1 bg-white rounded hover:bg-green-50"
@@ -198,7 +209,9 @@ export const GridBlock: React.FC<GridBlockProps> = ({
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">Columns</label>
+                <label className="block text-sm font-medium mb-2">
+                  Columns
+                </label>
                 <input
                   type="number"
                   min="1"
@@ -239,8 +252,8 @@ export const GridBlock: React.FC<GridBlockProps> = ({
                   key={`${rowIndex}-${colIndex}`}
                   className={`min-h-[200px] rounded-lg transition-all relative ${
                     editable
-                      ? 'border-2 border-dashed border-gray-300 hover:border-blue-500 bg-transparent'
-                      : 'bg-transparent'
+                      ? "border-2 border-dashed border-gray-300 hover:border-blue-500 bg-transparent"
+                      : "bg-transparent"
                   }`}
                 >
                   {/* Empty Cell - Show Add Component Button */}
@@ -250,7 +263,10 @@ export const GridBlock: React.FC<GridBlockProps> = ({
                         onClick={() => handleAddComponent(rowIndex, colIndex)}
                         className="flex flex-col items-center gap-2 px-6 py-4 bg-white border-2 border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all group"
                       >
-                        <Plus size={24} className="text-gray-400 group-hover:text-blue-600" />
+                        <Plus
+                          size={24}
+                          className="text-gray-400 group-hover:text-blue-600"
+                        />
                         <span className="text-sm font-medium text-gray-600 group-hover:text-blue-600">
                           Add Component
                         </span>
@@ -272,15 +288,19 @@ export const GridBlock: React.FC<GridBlockProps> = ({
                       )}
                       <div className="h-full">
                         {(() => {
-                          const Component = getBlockComponent(cell.componentType!);
-                          return Component ? <Component {...cell.componentProps} /> : null;
+                          const Component = getBlockComponent(
+                            cell.componentType!,
+                          );
+                          return Component ? (
+                            <Component {...cell.componentProps} />
+                          ) : null;
                         })()}
                       </div>
                     </div>
                   )}
                 </div>
               );
-            })
+            }),
           )}
         </div>
 
@@ -300,23 +320,24 @@ export const GridBlock: React.FC<GridBlockProps> = ({
 };
 
 export const gridBlockConfig = {
-  type: 'grid',
-  name: 'Grid Section',
-  category: 'sections',
-  thumbnail: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIwIiBoZWlnaHQ9IjE4MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMzIwIiBoZWlnaHQ9IjE4MCIgZmlsbD0iI2Y5ZmFmYiIvPjxyZWN0IHg9IjIwIiB5PSIyMCIgd2lkdGg9IjkwIiBoZWlnaHQ9IjcwIiBmaWxsPSJ3aGl0ZSIgc3Ryb2tlPSIjZTVlN2ViIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1kYXNoYXJyYXk9IjUsMiIvPjxyZWN0IHg9IjExNSIgeT0iMjAiIHdpZHRoPSI5MCIgaGVpZ2h0PSI3MCIgZmlsbD0id2hpdGUiIHN0cm9rZT0iI2U1ZTdlYiIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtZGFzaGFycmF5PSI1LDIiLz48cmVjdCB4PSIyMTAiIHk9IjIwIiB3aWR0aD0iOTAiIGhlaWdodD0iNzAiIGZpbGw9IndoaXRlIiBzdHJva2U9IiNlNWU3ZWIiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWRhc2hhcnJheT0iNSwyIi8+PHJlY3QgeD0iMjAiIHk9IjkwIiB3aWR0aD0iOTAiIGhlaWdodD0iNzAiIGZpbGw9IndoaXRlIiBzdHJva2U9IiNlNWU3ZWIiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWRhc2hhcnJheT0iNSwyIi8+PHJlY3QgeD0iMTE1IiB5PSI5MCIgd2lkdGg9IjkwIiBoZWlnaHQ9IjcwIiBmaWxsPSJ3aGl0ZSIgc3Ryb2tlPSIjZTVlN2ViIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1kYXNoYXJyYXk9IjUsMiIvPjxyZWN0IHg9IjIxMCIgeT0iOTAiIHdpZHRoPSI5MCIgaGVpZ2h0PSI3MCIgZmlsbD0id2hpdGUiIHN0cm9rZT0iI2U1ZTdlYiIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtZGFzaGFycmF5PSI1LDIiLz48L3N2Zz4=',
+  type: "grid",
+  name: "Grid Section",
+  category: "sections",
+  thumbnail:
+    "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIwIiBoZWlnaHQ9IjE4MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMzIwIiBoZWlnaHQ9IjE4MCIgZmlsbD0iI2Y5ZmFmYiIvPjxyZWN0IHg9IjIwIiB5PSIyMCIgd2lkdGg9IjkwIiBoZWlnaHQ9IjcwIiBmaWxsPSJ3aGl0ZSIgc3Ryb2tlPSIjZTVlN2ViIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1kYXNoYXJyYXk9IjUsMiIvPjxyZWN0IHg9IjExNSIgeT0iMjAiIHdpZHRoPSI5MCIgaGVpZ2h0PSI3MCIgZmlsbD0id2hpdGUiIHN0cm9rZT0iI2U1ZTdlYiIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtZGFzaGFycmF5PSI1LDIiLz48cmVjdCB4PSIyMTAiIHk9IjIwIiB3aWR0aD0iOTAiIGhlaWdodD0iNzAiIGZpbGw9IndoaXRlIiBzdHJva2U9IiNlNWU3ZWIiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWRhc2hhcnJheT0iNSwyIi8+PHJlY3QgeD0iMjAiIHk9IjkwIiB3aWR0aD0iOTAiIGhlaWdodD0iNzAiIGZpbGw9IndoaXRlIiBzdHJva2U9IiNlNWU3ZWIiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWRhc2hhcnJheT0iNSwyIi8+PHJlY3QgeD0iMTE1IiB5PSI5MCIgd2lkdGg9IjkwIiBoZWlnaHQ9IjcwIiBmaWxsPSJ3aGl0ZSIgc3Ryb2tlPSIjZTVlN2ViIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1kYXNoYXJyYXk9IjUsMiIvPjxyZWN0IHg9IjIxMCIgeT0iOTAiIHdpZHRoPSI5MCIgaGVpZ2h0PSI3MCIgZmlsbD0id2hpdGUiIHN0cm9rZT0iI2U1ZTdlYiIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtZGFzaGFycmF5PSI1LDIiLz48L3N2Zz4=",
   defaultProps: {
-    title: '',
+    title: "",
     rows: 2,
     columns: 3,
     cells: [],
     gap: 16,
-    padding: '2rem',
+    padding: "2rem",
   },
   propsSchema: {
-    title: { type: 'text', label: 'Grid Title' },
-    rows: { type: 'number', label: 'Rows', min: 1, max: 12 },
-    columns: { type: 'number', label: 'Columns', min: 1, max: 12 },
-    gap: { type: 'number', label: 'Gap (px)', min: 0, max: 64 },
-    padding: { type: 'text', label: 'Padding' },
+    title: { type: "text", label: "Grid Title" },
+    rows: { type: "number", label: "Rows", min: 1, max: 12 },
+    columns: { type: "number", label: "Columns", min: 1, max: 12 },
+    gap: { type: "number", label: "Gap (px)", min: 0, max: 64 },
+    padding: { type: "text", label: "Padding" },
   },
 };

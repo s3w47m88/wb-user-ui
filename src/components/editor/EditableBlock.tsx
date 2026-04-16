@@ -357,6 +357,10 @@ export const EditableBlock: React.FC<EditableBlockProps> = ({
   const visibleSelectedElementKey = isComponentSelected
     ? selectedElementKey
     : null;
+  const currentImageUrl =
+    currentImageKey && typeof component.props[currentImageKey] === "string"
+      ? component.props[currentImageKey]
+      : undefined;
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -463,9 +467,7 @@ export const EditableBlock: React.FC<EditableBlockProps> = ({
           isOpen={showImageUploader}
           onClose={() => setShowImageUploader(false)}
           onImageSelected={handleImageSelected}
-          currentImageUrl={
-            currentImageKey ? component.props[currentImageKey] : undefined
-          }
+          currentImageUrl={currentImageUrl}
         />
       </div>
     );
@@ -526,9 +528,7 @@ export const EditableBlock: React.FC<EditableBlockProps> = ({
         isOpen={showImageUploader}
         onClose={() => setShowImageUploader(false)}
         onImageSelected={handleImageSelected}
-        currentImageUrl={
-          currentImageKey ? component.props[currentImageKey] : undefined
-        }
+        currentImageUrl={currentImageUrl}
       />
 
       {/* Floating Text Toolbar */}
@@ -555,6 +555,19 @@ function renderComponent(
   const { type, props } = component;
   const headingFontFamily = theme?.fonts?.heading || "inherit";
   const bodyFontFamily = theme?.fonts?.body || "inherit";
+  const getStringProp = (key: string, fallback = "") => {
+    const value = props[key];
+    if (typeof value === "string") {
+      return value;
+    }
+    if (typeof value === "number") {
+      return String(value);
+    }
+    return fallback;
+  };
+  const getNumberProp = (key: string, fallback = 0) =>
+    typeof props[key] === "number" ? props[key] : fallback;
+  const getBooleanProp = (key: string) => props[key] === true;
 
   // Hero Block
   if (type === "hero") {
@@ -566,8 +579,8 @@ function renderComponent(
         className="relative flex items-center justify-center min-h-[500px] text-white overflow-hidden"
         onClick={() => editable && layoutEditor?.selectKey(null)}
         style={{
-          backgroundImage: props.backgroundImage
-            ? `url(${props.backgroundImage})`
+          backgroundImage: getStringProp("backgroundImage")
+            ? `url(${getStringProp("backgroundImage")})`
             : `linear-gradient(to bottom right, ${gradientFrom}, ${gradientTo})`,
           backgroundSize: "cover",
           backgroundPosition: "center",
@@ -610,7 +623,7 @@ function renderComponent(
                 fontFamily: headingFontFamily,
               }}
             >
-              {props.title}
+              {getStringProp("title")}
             </h1>
           </EditableElementFrame>
           <EditableElementFrame
@@ -636,7 +649,7 @@ function renderComponent(
                 fontFamily: bodyFontFamily,
               }}
             >
-              {props.subtitle}
+              {getStringProp("subtitle")}
             </p>
           </EditableElementFrame>
           <EditableElementFrame
@@ -645,7 +658,7 @@ function renderComponent(
             className="mx-auto w-fit"
           >
             <a
-              href={props.ctaLink}
+              href={getStringProp("ctaLink", "#")}
               className="inline-block px-8 py-3 rounded-lg font-semibold hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl animate-slide-up animation-delay-400"
               contentEditable={editable}
               suppressContentEditableWarning
@@ -666,7 +679,7 @@ function renderComponent(
                 fontFamily: bodyFontFamily,
               }}
             >
-              {props.ctaText}
+              {getStringProp("ctaText")}
             </a>
           </EditableElementFrame>
           {editable && (
@@ -685,7 +698,8 @@ function renderComponent(
 
   // CTA Block
   if (type === "cta") {
-    const bgColor = theme.colors.primary || props.backgroundColor || "#3b82f6";
+    const bgColor =
+      theme.colors.primary || getStringProp("backgroundColor", "#3b82f6");
 
     return (
       <div
@@ -727,7 +741,7 @@ function renderComponent(
                 fontFamily: headingFontFamily,
               }}
             >
-              {props.heading}
+              {getStringProp("heading")}
             </h2>
           </EditableElementFrame>
           <EditableElementFrame
@@ -753,7 +767,7 @@ function renderComponent(
                 fontFamily: bodyFontFamily,
               }}
             >
-              {props.description}
+              {getStringProp("description")}
             </p>
           </EditableElementFrame>
           <EditableElementFrame
@@ -762,7 +776,7 @@ function renderComponent(
             className="mx-auto w-fit"
           >
             <a
-              href={props.buttonLink}
+              href={getStringProp("buttonLink", "#")}
               className="inline-block px-8 py-3 rounded-lg font-semibold hover:scale-105 hover:shadow-2xl transition-all duration-300 animate-fade-in animation-delay-400"
               contentEditable={editable}
               suppressContentEditableWarning
@@ -783,7 +797,7 @@ function renderComponent(
                 fontFamily: bodyFontFamily,
               }}
             >
-              {props.buttonText}
+              {getStringProp("buttonText")}
             </a>
           </EditableElementFrame>
         </div>
@@ -835,13 +849,13 @@ function renderComponent(
                 fontFamily: headingFontFamily,
               }}
             >
-              {props.title}
+              {getStringProp("title")}
             </h2>
           </EditableElementFrame>
           <div
             className="grid gap-6"
             style={{
-              gridTemplateColumns: `repeat(${props.columns || 3}, minmax(0, 1fr))`,
+              gridTemplateColumns: `repeat(${getNumberProp("columns", 3)}, minmax(0, 1fr))`,
             }}
           >
             {images.map((image, index) => (
@@ -906,7 +920,7 @@ function renderComponent(
             className="block"
           >
             <div
-              className={`prose prose-lg ${alignmentClasses[props.alignment as keyof typeof alignmentClasses] || "text-left"} ${fontSizeClasses[props.fontSize as keyof typeof fontSizeClasses] || "text-base"}`}
+              className={`prose prose-lg ${alignmentClasses[getStringProp("alignment") as keyof typeof alignmentClasses] || "text-left"} ${fontSizeClasses[getStringProp("fontSize") as keyof typeof fontSizeClasses] || "text-base"}`}
               contentEditable={editable}
               suppressContentEditableWarning
               onFocus={(e) => editable && onTextFocus?.(e)}
@@ -917,7 +931,7 @@ function renderComponent(
                   onTextBlur?.(e);
                 }
               }}
-              dangerouslySetInnerHTML={{ __html: props.content }}
+              dangerouslySetInnerHTML={{ __html: getStringProp("content") }}
               style={{
                 outline: editable
                   ? "2px dashed rgba(59, 130, 246, 0.5)"
@@ -954,8 +968,8 @@ function renderComponent(
             >
               <div className="relative">
                 <img
-                  src={props.imageUrl}
-                  alt={props.candidateName}
+                  src={getStringProp("imageUrl")}
+                  alt={getStringProp("candidateName")}
                   className="w-full rounded-lg shadow-xl"
                 />
                 {editable && (
@@ -972,7 +986,9 @@ function renderComponent(
 
             <div>
               <div className="flex items-center gap-3 mb-4">
-                {props.flagEmoji && <span className="text-4xl">🇺🇸</span>}
+                {getBooleanProp("flagEmoji") && (
+                  <span className="text-4xl">🇺🇸</span>
+                )}
                 <div className="flex-1">
                   <EditableElementFrame
                     elementKey="about-name"
@@ -1002,7 +1018,7 @@ function renderComponent(
                         fontFamily: headingFontFamily,
                       }}
                     >
-                      {props.candidateName}
+                      {getStringProp("candidateName")}
                     </h2>
                   </EditableElementFrame>
                   <EditableElementFrame
@@ -1033,7 +1049,7 @@ function renderComponent(
                         fontFamily: bodyFontFamily,
                       }}
                     >
-                      {props.candidateTitle}
+                      {getStringProp("candidateTitle")}
                     </p>
                   </EditableElementFrame>
                 </div>
@@ -1065,7 +1081,7 @@ function renderComponent(
                       fontFamily: bodyFontFamily,
                     }}
                   >
-                    {props.bio}
+                    {getStringProp("bio")}
                   </p>
                 </EditableElementFrame>
               </div>
@@ -1103,7 +1119,7 @@ function renderComponent(
               fontFamily: headingFontFamily,
             }}
           >
-            {props.title}
+            {getStringProp("title")}
           </h2>
 
           <div className="grid md:grid-cols-3 gap-8">
@@ -1253,7 +1269,7 @@ function renderComponent(
                   fontFamily: headingFontFamily,
                 }}
               >
-                {props.companyName}
+                {getStringProp("companyName")}
               </h3>
               <p
                 className="text-gray-400"
@@ -1275,7 +1291,7 @@ function renderComponent(
                   fontFamily: bodyFontFamily,
                 }}
               >
-                {props.tagline}
+                {getStringProp("tagline")}
               </p>
             </div>
 
@@ -1350,8 +1366,8 @@ function renderComponent(
 
           {/* Copyright */}
           <div className="border-t border-gray-800 pt-8 text-center text-gray-400 text-sm">
-            © {new Date().getFullYear()} {props.companyName}. All rights
-            reserved.
+            © {new Date().getFullYear()} {getStringProp("companyName")}. All
+            rights reserved.
           </div>
         </div>
       </footer>

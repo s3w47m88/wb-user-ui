@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from "@supabase/supabase-js";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_CONTENT_URL!;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_CONTENT_PUBLISHABLE_KEY!;
@@ -23,9 +23,9 @@ export type PageConfig = {
 export type ComponentData = {
   id: string;
   type: string;
-  props: Record<string, any>;
+  props: Record<string, unknown>;
   order: number;
-  styles?: Record<string, any>;
+  styles?: Record<string, unknown>;
 };
 
 export type ThemeConfig = {
@@ -40,5 +40,5 @@ export type ThemeConfig = {
     heading: string;
     body: string;
   };
-  mode: 'light' | 'dark';
+  mode: "light" | "dark";
 };

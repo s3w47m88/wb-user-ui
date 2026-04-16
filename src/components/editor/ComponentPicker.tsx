@@ -1,13 +1,16 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { X, Search } from 'lucide-react';
-import { getAllBlockConfigs, getCategories } from '@/lib/block-registry';
+import React, { useState } from "react";
+import { X, Search } from "lucide-react";
+import { getAllBlockConfigs, getCategories } from "@/lib/block-registry";
 
 type ComponentPickerProps = {
   isOpen: boolean;
   onClose: () => void;
-  onSelectComponent: (type: string, defaultProps: Record<string, any>) => void;
+  onSelectComponent: (
+    type: string,
+    defaultProps: Record<string, unknown>,
+  ) => void;
   filterCategory?: string; // Optional: only show blocks from this category
 };
 
@@ -17,17 +20,23 @@ export const ComponentPicker: React.FC<ComponentPickerProps> = ({
   onSelectComponent,
   filterCategory,
 }) => {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string>(filterCategory || 'All');
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<string>(
+    filterCategory || "All",
+  );
 
-  const categories = filterCategory ? [filterCategory] : ['All', ...getCategories()];
+  const categories = filterCategory
+    ? [filterCategory]
+    : ["All", ...getCategories()];
   const blocks = getAllBlockConfigs();
 
   const filteredBlocks = blocks.filter((block) => {
-    const matchesSearch = block.name.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = block.name
+      .toLowerCase()
+      .includes(searchQuery.toLowerCase());
     const matchesCategory = filterCategory
       ? block.category === filterCategory
-      : (selectedCategory === 'All' || block.category === selectedCategory);
+      : selectedCategory === "All" || block.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
 
@@ -39,9 +48,11 @@ export const ComponentPicker: React.FC<ComponentPickerProps> = ({
         {/* Header */}
         <div className="border-b border-gray-200 px-6 py-4 flex items-center justify-between">
           <h2 className="text-2xl font-bold">
-            {filterCategory === 'sections' ? 'Add Section' :
-             filterCategory === 'components' ? 'Add Component' :
-             'Add Component'}
+            {filterCategory === "sections"
+              ? "Add Section"
+              : filterCategory === "components"
+                ? "Add Component"
+                : "Add Component"}
           </h2>
           <button
             onClick={onClose}
@@ -54,7 +65,10 @@ export const ComponentPicker: React.FC<ComponentPickerProps> = ({
         {/* Search and Filters */}
         <div className="border-b border-gray-200 px-6 py-4">
           <div className="relative mb-4">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+            <Search
+              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+              size={20}
+            />
             <input
               type="text"
               placeholder="Search components..."
@@ -73,8 +87,8 @@ export const ComponentPicker: React.FC<ComponentPickerProps> = ({
                 onClick={() => setSelectedCategory(category)}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                   selectedCategory === category
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    ? "bg-blue-600 text-white"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                 }`}
               >
                 {category.charAt(0).toUpperCase() + category.slice(1)}
@@ -88,19 +102,27 @@ export const ComponentPicker: React.FC<ComponentPickerProps> = ({
           {filteredBlocks.length === 0 ? (
             <div className="text-center py-12 text-gray-500">
               <p className="text-lg">No components found</p>
-              <p className="text-sm mt-2">Try adjusting your search or filters</p>
+              <p className="text-sm mt-2">
+                Try adjusting your search or filters
+              </p>
             </div>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               {filteredBlocks.map((block) => (
                 <button
                   key={block.type}
-                  onClick={() => onSelectComponent(block.type, block.defaultProps)}
+                  onClick={() =>
+                    onSelectComponent(block.type, block.defaultProps)
+                  }
                   className="group border-2 border-gray-200 rounded-lg p-4 hover:border-blue-500 hover:bg-blue-50 transition-all text-left"
                 >
                   <div className="aspect-video bg-gray-100 rounded mb-3 flex items-center justify-center overflow-hidden">
                     {block.thumbnail ? (
-                      <img src={block.thumbnail} alt={block.name} className="w-full h-full object-cover" />
+                      <img
+                        src={block.thumbnail}
+                        alt={block.name}
+                        className="w-full h-full object-cover"
+                      />
                     ) : (
                       <span className="text-4xl">📦</span>
                     )}
@@ -108,7 +130,9 @@ export const ComponentPicker: React.FC<ComponentPickerProps> = ({
                   <h3 className="font-semibold text-gray-900 group-hover:text-blue-600 mb-1">
                     {block.name}
                   </h3>
-                  <p className="text-xs text-gray-500 capitalize">{block.category}</p>
+                  <p className="text-xs text-gray-500 capitalize">
+                    {block.category}
+                  </p>
                 </button>
               ))}
             </div>

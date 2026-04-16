@@ -1,26 +1,28 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { requestPasswordReset } from '@/lib/auth-service';
-import { Loader2, ArrowLeft } from 'lucide-react';
+import React, { useState } from "react";
+import { requestPasswordReset } from "@/lib/auth-service";
+import { Loader2, ArrowLeft } from "lucide-react";
 
 type ForgotPasswordFormProps = {
   onBack: () => void;
 };
 
-export const ForgotPasswordForm: React.FC<ForgotPasswordFormProps> = ({ onBack }) => {
-  const [email, setEmail] = useState('');
+export const ForgotPasswordForm: React.FC<ForgotPasswordFormProps> = ({
+  onBack,
+}) => {
+  const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError("");
     setSuccess(false);
 
     if (!email) {
-      setError('Please enter your email address');
+      setError("Please enter your email address");
       return;
     }
 
@@ -32,11 +34,11 @@ export const ForgotPasswordForm: React.FC<ForgotPasswordFormProps> = ({ onBack }
       if (result.success) {
         setSuccess(true);
       } else {
-        setError(result.error || 'Failed to send reset email');
+        setError(result.error || "Failed to send reset email");
       }
     } catch (err) {
-      setError('An unexpected error occurred. Please try again.');
-      console.error('Password reset error:', err);
+      setError("An unexpected error occurred. Please try again.");
+      console.error("Password reset error:", err);
     } finally {
       setLoading(false);
     }
@@ -47,17 +49,30 @@ export const ForgotPasswordForm: React.FC<ForgotPasswordFormProps> = ({ onBack }
       <div className="w-full max-w-md mx-auto p-6 bg-white rounded-lg shadow-lg">
         <div className="text-center">
           <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            <svg
+              className="w-8 h-8 text-green-600"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M5 13l4 4L19 7"
+              />
             </svg>
           </div>
 
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Check Your Email</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">
+            Check Your Email
+          </h2>
           <p className="text-gray-600 mb-6">
-            We've sent a password reset link to <strong>{email}</strong>
+            We&apos;ve sent a password reset link to <strong>{email}</strong>
           </p>
           <p className="text-sm text-gray-500 mb-6">
-            Click the link in the email to reset your password. The link will expire in 1 hour.
+            Click the link in the email to reset your password. The link will
+            expire in 1 hour.
           </p>
 
           <button
@@ -84,7 +99,8 @@ export const ForgotPasswordForm: React.FC<ForgotPasswordFormProps> = ({ onBack }
 
       <h2 className="text-2xl font-bold text-gray-900 mb-2">Reset Password</h2>
       <p className="text-gray-600 mb-6">
-        Enter your email address and we'll send you a link to reset your password.
+        Enter your email address and we&apos;ll send you a link to reset your
+        password.
       </p>
 
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -97,7 +113,10 @@ export const ForgotPasswordForm: React.FC<ForgotPasswordFormProps> = ({ onBack }
 
         {/* Email */}
         <div>
-          <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+          <label
+            htmlFor="email"
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
             Email Address
           </label>
           <input
@@ -106,7 +125,7 @@ export const ForgotPasswordForm: React.FC<ForgotPasswordFormProps> = ({ onBack }
             value={email}
             onChange={(e) => {
               setEmail(e.target.value);
-              if (error) setError('');
+              if (error) setError("");
             }}
             required
             autoComplete="email"
@@ -126,7 +145,7 @@ export const ForgotPasswordForm: React.FC<ForgotPasswordFormProps> = ({ onBack }
               Sending Reset Link...
             </>
           ) : (
-            'Send Reset Link'
+            "Send Reset Link"
           )}
         </button>
       </form>

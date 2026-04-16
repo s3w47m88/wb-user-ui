@@ -1,9 +1,15 @@
-'use client';
+"use client";
 
-import React, { useEffect, useState } from 'react';
-import { getUserOrganizations, Organization, getCurrentUserProfile, signOut } from '@/lib/auth-service';
-import { Building2, Check, Loader2, LogOut, User } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import React, { useEffect, useState } from "react";
+import {
+  getUserOrganizations,
+  Organization,
+  UserProfile,
+  getCurrentUserProfile,
+  signOut,
+} from "@/lib/auth-service";
+import { Building2, Check, Loader2, LogOut, User } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 type OrganizationSwitcherProps = {
   isOpen: boolean;
@@ -20,7 +26,7 @@ export const OrganizationSwitcher: React.FC<OrganizationSwitcherProps> = ({
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [selectedOrgId, setSelectedOrgId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [userProfile, setUserProfile] = useState<any>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -33,19 +39,22 @@ export const OrganizationSwitcher: React.FC<OrganizationSwitcherProps> = ({
 
     try {
       // Get current selected organization from localStorage
-      const storedOrgId = typeof window !== 'undefined' ? localStorage.getItem('selectedOrganizationId') : null;
+      const storedOrgId =
+        typeof window !== "undefined"
+          ? localStorage.getItem("selectedOrganizationId")
+          : null;
       setSelectedOrgId(storedOrgId);
 
       // Load organizations and user profile
       const [orgs, profile] = await Promise.all([
         getUserOrganizations(),
-        getCurrentUserProfile()
+        getCurrentUserProfile(),
       ]);
 
       setOrganizations(orgs);
       setUserProfile(profile);
     } catch (error) {
-      console.error('Failed to load organization data:', error);
+      console.error("Failed to load organization data:", error);
     } finally {
       setLoading(false);
     }
@@ -53,8 +62,8 @@ export const OrganizationSwitcher: React.FC<OrganizationSwitcherProps> = ({
 
   const handleSelectOrganization = (organizationId: string) => {
     setSelectedOrgId(organizationId);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('selectedOrganizationId', organizationId);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("selectedOrganizationId", organizationId);
     }
     onOrganizationChange(organizationId);
     onClose();
@@ -64,11 +73,11 @@ export const OrganizationSwitcher: React.FC<OrganizationSwitcherProps> = ({
     const result = await signOut();
     if (result.success) {
       // Clear localStorage
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('selectedOrganizationId');
-        localStorage.removeItem('currentPageId');
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("selectedOrganizationId");
+        localStorage.removeItem("currentPageId");
       }
-      router.push('/auth');
+      router.push("/auth");
     }
   };
 
@@ -134,22 +143,27 @@ export const OrganizationSwitcher: React.FC<OrganizationSwitcherProps> = ({
                       onClick={() => handleSelectOrganization(org.id)}
                       className={`w-full p-4 border-2 rounded-lg text-left transition-all group ${
                         selectedOrgId === org.id
-                          ? 'border-red-600 bg-red-50'
-                          : 'border-gray-200 hover:border-red-300 hover:bg-gray-50'
+                          ? "border-red-600 bg-red-50"
+                          : "border-gray-200 hover:border-red-300 hover:bg-gray-50"
                       }`}
                     >
                       <div className="flex items-start justify-between">
                         <div className="flex items-start flex-1 min-w-0 mr-2">
-                          <div className={`flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center mr-3 ${
-                            selectedOrgId === org.id
-                              ? 'bg-red-100'
-                              : 'bg-gray-100 group-hover:bg-red-50'
-                          }`}>
-                            <Building2 size={20} className={
+                          <div
+                            className={`flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center mr-3 ${
                               selectedOrgId === org.id
-                                ? 'text-red-600'
-                                : 'text-gray-600 group-hover:text-red-600'
-                            } />
+                                ? "bg-red-100"
+                                : "bg-gray-100 group-hover:bg-red-50"
+                            }`}
+                          >
+                            <Building2
+                              size={20}
+                              className={
+                                selectedOrgId === org.id
+                                  ? "text-red-600"
+                                  : "text-gray-600 group-hover:text-red-600"
+                              }
+                            />
                           </div>
                           <div className="flex-1 min-w-0">
                             <h4 className="font-semibold text-gray-900 mb-1 truncate">
@@ -168,7 +182,10 @@ export const OrganizationSwitcher: React.FC<OrganizationSwitcherProps> = ({
                           </div>
                         </div>
                         {selectedOrgId === org.id && (
-                          <Check size={20} className="text-red-600 flex-shrink-0" />
+                          <Check
+                            size={20}
+                            className="text-red-600 flex-shrink-0"
+                          />
                         )}
                       </div>
                     </button>
@@ -177,7 +194,10 @@ export const OrganizationSwitcher: React.FC<OrganizationSwitcherProps> = ({
 
                 {organizations.length === 0 && (
                   <div className="text-center py-8 text-gray-500">
-                    <Building2 size={48} className="mx-auto mb-3 text-gray-400" />
+                    <Building2
+                      size={48}
+                      className="mx-auto mb-3 text-gray-400"
+                    />
                     <p>No organizations found</p>
                   </div>
                 )}
