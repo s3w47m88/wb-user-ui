@@ -1,4 +1,4 @@
-import { supabaseControl } from "./supabase-control";
+import { getSupabaseControl } from "./supabase-control";
 import { formatSupabaseClientError } from "./supabase-errors";
 
 export type UserProfile = {
@@ -196,6 +196,7 @@ export async function signIn(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const sanitizedEmail = sanitizeInput(email.toLowerCase());
+    const supabaseControl = getSupabaseControl();
 
     const { error } = await supabaseControl.auth.signInWithPassword({
       email: sanitizedEmail,
@@ -224,6 +225,7 @@ export async function signIn(
  */
 export async function signOut(): Promise<{ success: boolean; error?: string }> {
   try {
+    const supabaseControl = getSupabaseControl();
     const { error } = await supabaseControl.auth.signOut();
 
     if (error) {
@@ -248,6 +250,7 @@ export async function signOut(): Promise<{ success: boolean; error?: string }> {
  */
 export async function getCurrentUserProfile(): Promise<UserProfile | null> {
   try {
+    const supabaseControl = getSupabaseControl();
     const {
       data: { user },
     } = await supabaseControl.auth.getUser();
@@ -301,6 +304,7 @@ export async function getCurrentUserProfile(): Promise<UserProfile | null> {
  */
 export async function getUserOrganizations(): Promise<Organization[]> {
   try {
+    const supabaseControl = getSupabaseControl();
     const {
       data: { session },
       error: sessionError,
@@ -343,6 +347,7 @@ export async function requestPasswordReset(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const sanitizedEmail = sanitizeInput(email.toLowerCase());
+    const supabaseControl = getSupabaseControl();
 
     const { error } = await supabaseControl.auth.resetPasswordForEmail(
       sanitizedEmail,
@@ -378,6 +383,7 @@ export async function updatePassword(
       return { success: false, error: passwordValidation.error };
     }
 
+    const supabaseControl = getSupabaseControl();
     const { error } = await supabaseControl.auth.updateUser({
       password: newPassword,
     });

@@ -1,6 +1,19 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_CONTROL_URL!;
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_CONTROL_PUBLISHABLE_KEY!;
+let supabaseControlClient: SupabaseClient | null = null;
 
-export const supabaseControl = createClient(supabaseUrl, supabaseKey);
+export function getSupabaseControl(): SupabaseClient {
+  if (supabaseControlClient) {
+    return supabaseControlClient;
+  }
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_CONTROL_URL;
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_CONTROL_PUBLISHABLE_KEY;
+
+  if (!supabaseUrl || !supabaseKey) {
+    throw new Error("Supabase control environment variables are missing.");
+  }
+
+  supabaseControlClient = createClient(supabaseUrl, supabaseKey);
+  return supabaseControlClient;
+}

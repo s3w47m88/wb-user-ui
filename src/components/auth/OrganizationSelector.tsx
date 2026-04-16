@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useEffectEvent, useState } from "react";
-import { supabaseControl } from "@/lib/supabase-control";
+import { getSupabaseControl } from "@/lib/supabase-control";
 import { getUserOrganizations, Organization } from "@/lib/auth-service";
 import { formatSupabaseClientError } from "@/lib/supabase-errors";
 import { Loader2, Building2 } from "lucide-react";
@@ -24,6 +24,8 @@ export const OrganizationSelector: React.FC<OrganizationSelectorProps> = ({
     setError("");
 
     try {
+      const supabaseControl = getSupabaseControl();
+
       // Check if user email is confirmed first
       const {
         data: { user },
@@ -73,6 +75,7 @@ export const OrganizationSelector: React.FC<OrganizationSelectorProps> = ({
     setError("");
 
     try {
+      const supabaseControl = getSupabaseControl();
       const {
         data: { session },
       } = await supabaseControl.auth.getSession();

@@ -8,7 +8,7 @@ import React, {
   useState,
 } from "react";
 import { useRouter } from "next/navigation";
-import { supabaseControl } from "@/lib/supabase-control";
+import { getSupabaseControl } from "@/lib/supabase-control";
 import {
   getCurrentUserProfile,
   getUserOrganizations,
@@ -45,6 +45,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const loadUserData = useEffectEvent(async () => {
     try {
+      const supabaseControl = getSupabaseControl();
+
       // Check if user email is confirmed
       const {
         data: { user },
@@ -91,9 +93,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let mounted = true;
+    let unsubscribe = () => {};
 
     const initializeAuth = async () => {
       try {
+        const supabaseControl = getSupabaseControl();
         const {
           data: { session },
         } = await supabaseControl.auth.getSession();
@@ -132,25 +136,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     void initializeAuth();
 
-    // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabaseControl.auth.onAuthStateChange((_event, session) => {
-      setAuthError(null);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        void loadUserData();
-      } else {
-        setProfile(null);
-        setOrganizations([]);
-        setSelectedOrganizationId(null);
-        setLoading(false);
-      }
-    });
+    try {
+      const supabaseControl = getSupabaseControl();
+      const {
+        data: { subscription },
+      } = supabaseControl.auth.onAuthStateChange((_event, session) => {
+        setAuthError(null);
+        setUser(session?.user ?? null);
+        if (session?.user) {
+          void loadUserData();
+        } else {
+          setProfile(null);
+          setOrganizations([]);
+          setSelectedOrganizationId(null);
+          setLoading(false);
+        }
+      });
+
+      unsubscribe = () => subscription.unsubscribe();
+    } catch (error) {
+      console.error("Failed to subscribe to auth changes:", error);
+      setAuthError(
+        formatSupabaseClientError(
+          error,
+          "Failed to initialize auth session.",
+        ),
+      );
+      setLoading(false);
+    }
 
     return () => {
       mounted = false;
-      subscription.unsubscribe();
+      unsubscribe();
     };
   }, []);
 
@@ -165,7 +182,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const handleSignOut = async () => {
-    await supabaseControl.auth.signOut();
+    try {
+      const supabaseControl = getSupabaseControl();
+      await supabaseControl.auth.signOut();
+    } catch (error) {
+      console.error("Failed to sign out:", error);
+    }
     setUser(null);
     setProfile(null);
     setOrganizations([]);

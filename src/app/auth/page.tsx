@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { supabaseControl } from "@/lib/supabase-control";
+import { getSupabaseControl } from "@/lib/supabase-control";
 import { useAuth } from "@/contexts/AuthContext";
 import { formatSupabaseClientError } from "@/lib/supabase-errors";
 import { LoginForm } from "@/components/auth/LoginForm";
@@ -27,6 +27,7 @@ export default function AuthPage() {
   const handleLoginSuccess = async () => {
     try {
       setPageError("");
+      const supabaseControl = getSupabaseControl();
 
       // After login, check if email is confirmed before showing org selector
       const {
