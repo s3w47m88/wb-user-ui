@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { loadPage } from "@/lib/page-service";
+import { loadPublicPage } from "@/lib/page-service";
 import { PageConfig } from "@/lib/supabase-content";
 import { EditableBlock } from "@/components/editor/EditableBlock";
 
@@ -17,7 +17,7 @@ export default function PreviewPage() {
     async function fetchPage() {
       try {
         const pageId = params.id as string;
-        const pageData = await loadPage(pageId);
+        const pageData = await loadPublicPage(pageId);
         setPage(pageData);
       } catch (err) {
         console.error("Error loading page:", err);
@@ -84,7 +84,13 @@ export default function PreviewPage() {
         {page.components
           .sort((a, b) => a.order - b.order)
           .map((component) => (
-            <EditableBlock key={component.id} component={component} disabled />
+            <EditableBlock
+              key={component.id}
+              component={component}
+              disabled
+              pageId={page.id}
+              themeOverride={page.theme}
+            />
           ))}
       </div>
     </div>

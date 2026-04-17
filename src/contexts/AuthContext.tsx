@@ -26,7 +26,7 @@ type AuthContextType = {
   loading: boolean;
   authError: string | null;
   signOut: () => Promise<void>;
-  selectOrganization: (organizationId: string) => void;
+  selectOrganization: (organizationId: string | null) => void;
   refreshOrganizations: () => Promise<void>;
 };
 
@@ -201,10 +201,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     router.push("/auth");
   };
 
-  const selectOrganization = (organizationId: string) => {
+  const selectOrganization = (organizationId: string | null) => {
     setSelectedOrganizationId(organizationId);
     if (typeof window !== "undefined") {
-      localStorage.setItem("selectedOrganizationId", organizationId);
+      if (organizationId) {
+        localStorage.setItem("selectedOrganizationId", organizationId);
+      } else {
+        localStorage.removeItem("selectedOrganizationId");
+      }
     }
   };
 

@@ -37,15 +37,18 @@ import { ImageUploader } from "./ImageUploader";
 import { FloatingTextToolbar } from "./FloatingTextToolbar";
 import { getBlockComponent } from "@/lib/block-registry";
 import { GridCell } from "@/components/blocks/GridBlock";
+import {
+  buildImageUpdate,
+  EditableImageTarget,
+  getEditableImageUrl,
+  GalleryImage,
+} from "@/lib/editor-images";
 
 type EditableBlockProps = {
   component: ComponentData;
   disabled?: boolean;
-};
-
-type GalleryImage = {
-  url: string;
-  alt?: string;
+  pageId?: string;
+  themeOverride?: ThemeConfig;
 };
 
 type NewsArticle = {
@@ -313,6 +316,8 @@ const EditableElementFrame: React.FC<EditableElementFrameProps> = ({
 export const EditableBlock: React.FC<EditableBlockProps> = ({
   component,
   disabled = false,
+  pageId,
+  themeOverride,
 }) => {
   const {
     attributes,
@@ -333,11 +338,13 @@ export const EditableBlock: React.FC<EditableBlockProps> = ({
     saveNow,
     selectComponent,
     selectedComponentId,
+    currentPageId,
   } = useEditorStore();
   const [showImageUploader, setShowImageUploader] = useState(false);
   const [showTextToolbar, setShowTextToolbar] = useState(false);
   const [showSectionSettings, setShowSectionSettings] = useState(false);
-  const [currentImageKey, setCurrentImageKey] = useState<string | null>(null);
+  const [currentImageTarget, setCurrentImageTarget] =
+    useState<EditableImageTarget | null>(null);
   const [selectedElementKey, setSelectedElementKey] = useState<string | null>(
     null,
   );
@@ -346,11 +353,13 @@ export const EditableBlock: React.FC<EditableBlockProps> = ({
     ? selectedElementKey
     : null;
   const isSectionSettingsVisible = showSectionSettings && isComponentSelected;
-  const currentImageUrl =
-    currentImageKey && typeof component.props[currentImageKey] === "string"
-      ? component.props[currentImageKey]
-      : undefined;
+  const currentImageUrl = getEditableImageUrl(
+    component.props,
+    currentImageTarget,
+  );
   const sectionStyle = getSectionStyleConfig(component.props);
+  const resolvedPageId = pageId ?? currentPageId ?? undefined;
+  const resolvedTheme = themeOverride ?? theme;
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -362,14 +371,17 @@ export const EditableBlock: React.FC<EditableBlockProps> = ({
     updateComponent(component.id, { [key]: value });
   };
 
-  const handleImageEdit = (key: string) => {
-    setCurrentImageKey(key);
+  const handleImageEdit = (key: string, index?: number) => {
+    setCurrentImageTarget({ key, index });
     setShowImageUploader(true);
   };
 
   const handleImageSelected = (url: string) => {
-    if (currentImageKey) {
-      updateComponent(component.id, { [currentImageKey]: url });
+    if (currentImageTarget) {
+      updateComponent(
+        component.id,
+        buildImageUpdate(component.props, currentImageTarget, url),
+      );
       saveNow();
     }
   };
@@ -441,12 +453,13 @@ export const EditableBlock: React.FC<EditableBlockProps> = ({
           false,
           handleTextEdit,
           handleImageEdit,
-          theme,
+          resolvedTheme,
           updateComponent,
           undefined,
           undefined,
           undefined,
           layoutEditor,
+          resolvedPageId,
         )}
         <ImageUploader
           isOpen={showImageUploader}
@@ -519,12 +532,13 @@ export const EditableBlock: React.FC<EditableBlockProps> = ({
           true,
           handleTextEdit,
           handleImageEdit,
-          theme,
+          resolvedTheme,
           updateComponent,
           handleTextFocus,
           handleTextSelect,
           handleTextBlur,
           layoutEditor,
+          resolvedPageId,
         )}
       </div>
 
@@ -549,13 +563,14 @@ function renderComponent(
   component: ComponentData,
   editable: boolean,
   onTextEdit: (key: string, value: string) => void,
-  onImageEdit: (key: string) => void,
+  onImageEdit: (key: string, index?: number) => void,
   theme: ThemeConfig,
   updateComponent?: (id: string, props: Record<string, unknown>) => void,
   onTextFocus?: (e: React.FocusEvent) => void,
   onTextSelect?: () => void,
   onTextBlur?: (e: React.FocusEvent) => void,
   layoutEditor?: LayoutEditorApi,
+  pageId?: string,
 ) {
   const { type, props } = component;
   const headingFontFamily = theme?.fonts?.heading || "inherit";
@@ -601,8 +616,8 @@ function renderComponent(
       sectionStyle.heroEffect === "pulse" ||
       sectionStyle.heroEffect === "cinematic";
 
-    return (
-      <div
+      return (
+        <div
         className="relative flex items-center justify-center text-white overflow-hidden"
         onClick={() => editable && layoutEditor?.selectKey(null)}
         style={{
@@ -911,7 +926,7 @@ function renderComponent(
                 />
                 {editable && (
                   <button
-                    onClick={() => onImageEdit("images")}
+                    onClick={() => onImageEdit("images", index)}
                     className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
                   >
                     <ImageIcon size={32} className="text-white" />
@@ -1480,7 +1495,13 @@ function renderComponent(
           ...backgroundStyle,
         }}
       >
-        <BlockComponent {...props} />
+        <BlockComponent
+          {...props}
+          componentId={component.id}
+          pageId={pageId}
+          submissionEnabled={!editable}
+          themeOverride={theme}
+        />
       </div>
     );
   }

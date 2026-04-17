@@ -1,5 +1,6 @@
 import { getSupabaseControl } from "./supabase-control";
 import { formatSupabaseClientError } from "./supabase-errors";
+import { normalizeOrganizationName } from "./organization-management";
 
 export type UserProfile = {
   id: string;
@@ -23,6 +24,20 @@ export type Organization = {
   created_at: string;
   updated_at: string;
 };
+
+async function getOrganizationAccessToken() {
+  const supabaseControl = getSupabaseControl();
+  const {
+    data: { session },
+    error: sessionError,
+  } = await supabaseControl.auth.getSession();
+
+  if (sessionError || !session?.access_token) {
+    throw new Error("Missing authenticated session.");
+  }
+
+  return session.access_token;
+}
 
 export type RegistrationData = {
   email: string;
@@ -304,20 +319,12 @@ export async function getCurrentUserProfile(): Promise<UserProfile | null> {
  */
 export async function getUserOrganizations(): Promise<Organization[]> {
   try {
-    const supabaseControl = getSupabaseControl();
-    const {
-      data: { session },
-      error: sessionError,
-    } = await supabaseControl.auth.getSession();
-
-    if (sessionError || !session?.access_token) {
-      return [];
-    }
+    const accessToken = await getOrganizationAccessToken();
 
     const response = await fetch("/api/organizations", {
       method: "GET",
       headers: {
-        Authorization: `Bearer ${session.access_token}`,
+        Authorization: `Bearer ${accessToken}`,
       },
     });
     const result = await response.json();
@@ -336,6 +343,87 @@ export async function getUserOrganizations(): Promise<Organization[]> {
   } catch (error) {
     console.error("Get organizations error:", error);
     return [];
+  }
+}
+
+export async function updateOrganization(
+  organizationId: string,
+  name: string,
+): Promise<{ success: boolean; organization?: Organization; error?: string }> {
+  try {
+    const trimmedName = normalizeOrganizationName(name);
+
+    if (!trimmedName) {
+      return { success: false, error: "Organization name is required" };
+    }
+
+    const accessToken = await getOrganizationAccessToken();
+    const response = await fetch(`/api/organizations/${organizationId}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({ name: trimmedName }),
+    });
+    const result = await response.json();
+
+    if (!response.ok || !result?.success) {
+      return {
+        success: false,
+        error: result?.error || "Failed to update organization",
+      };
+    }
+
+    return {
+      success: true,
+      organization: result.organization as Organization,
+    };
+  } catch (error) {
+    console.error("Update organization error:", error);
+    return {
+      success: false,
+      error: formatSupabaseClientError(
+        error,
+        "Failed to update organization.",
+      ),
+    };
+  }
+}
+
+export async function deleteOrganization(
+  organizationId: string,
+): Promise<{ success: boolean; deletedOrganizationId?: string; error?: string }> {
+  try {
+    const accessToken = await getOrganizationAccessToken();
+    const response = await fetch(`/api/organizations/${organizationId}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+    const result = await response.json();
+
+    if (!response.ok || !result?.success) {
+      return {
+        success: false,
+        error: result?.error || "Failed to delete organization",
+      };
+    }
+
+    return {
+      success: true,
+      deletedOrganizationId: result.deletedOrganizationId as string,
+    };
+  } catch (error) {
+    console.error("Delete organization error:", error);
+    return {
+      success: false,
+      error: formatSupabaseClientError(
+        error,
+        "Failed to delete organization.",
+      ),
+    };
   }
 }
 

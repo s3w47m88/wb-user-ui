@@ -13,6 +13,8 @@ type PropertySchema = {
   options?: string[];
   min?: number;
   max?: number;
+  placeholder?: string;
+  description?: string;
 };
 
 export const PropertyPanel: React.FC = () => {
@@ -70,6 +72,7 @@ export const PropertyPanel: React.FC = () => {
     const value = selectedComponent.props[key];
     return typeof value === "number" ? value : "";
   };
+  const getBooleanValue = (key: string) => selectedComponent.props[key] === true;
   return (
     <div className="w-80 bg-white border-l border-gray-200 overflow-auto">
       <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
@@ -99,6 +102,18 @@ export const PropertyPanel: React.FC = () => {
                 value={getStringValue(key)}
                 onChange={(e) => handlePropertyChange(key, e.target.value)}
                 onBlur={saveNow}
+                placeholder={schema.placeholder}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            )}
+
+            {schema.type === "textarea" && (
+              <textarea
+                value={getStringValue(key)}
+                onChange={(e) => handlePropertyChange(key, e.target.value)}
+                onBlur={saveNow}
+                rows={4}
+                placeholder={schema.placeholder}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             )}
@@ -109,6 +124,7 @@ export const PropertyPanel: React.FC = () => {
                 onChange={(e) => handlePropertyChange(key, e.target.value)}
                 onBlur={saveNow}
                 rows={6}
+                placeholder={schema.placeholder}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
               />
             )}
@@ -147,11 +163,42 @@ export const PropertyPanel: React.FC = () => {
               </div>
             )}
 
+            {schema.type === "boolean" && (
+              <button
+                type="button"
+                onClick={() => {
+                  handlePropertyChange(key, !getBooleanValue(key));
+                  saveNow();
+                }}
+                className={`flex w-full items-center justify-between rounded-lg border px-3 py-2 transition-colors ${
+                  getBooleanValue(key)
+                    ? "border-blue-600 bg-blue-50 text-blue-700"
+                    : "border-gray-300 bg-white text-gray-700"
+                }`}
+              >
+                <span className="text-sm font-medium">
+                  {getBooleanValue(key) ? "Enabled" : "Disabled"}
+                </span>
+                <span
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                    getBooleanValue(key) ? "bg-blue-600" : "bg-gray-300"
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${
+                      getBooleanValue(key) ? "translate-x-5" : "translate-x-1"
+                    }`}
+                  />
+                </span>
+              </button>
+            )}
+
             {schema.type === "select" && (
               <select
                 value={getStringValue(key)}
                 onChange={(e) => handlePropertyChange(key, e.target.value)}
                 onBlur={saveNow}
+                aria-label={schema.label}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 {(schema.options ?? []).map((option: string) => (
@@ -182,6 +229,10 @@ export const PropertyPanel: React.FC = () => {
                   Generate with AI
                 </button>
               </div>
+            )}
+
+            {schema.description && (
+              <p className="mt-2 text-xs text-gray-500">{schema.description}</p>
             )}
           </div>
         ))}

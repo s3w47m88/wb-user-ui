@@ -147,9 +147,9 @@ export const Toolbar: React.FC<ToolbarProps> = ({ onCreateNewSite }) => {
   const [showBrandPanel, setShowBrandPanel] = useState(false);
   const [showOrgSwitcher, setShowOrgSwitcher] = useState(false);
 
-  const handleOrganizationChange = (organizationId: string) => {
-    // When organization changes, reload sites for that organization
-    // This will be handled in the SitesPanel component
+  const handleOrganizationChange = (organizationId: string | null) => {
+    resetEditor();
+    setShowSitesPanel(false);
     console.log("Organization changed to:", organizationId);
   };
 

@@ -6,6 +6,7 @@ import {
   isValidUuid,
   normalizePageId,
 } from "@/lib/builder-pages";
+import { normalizeImagesProp } from "@/lib/editor-images";
 
 type EditorState = {
   components: ComponentData[];
@@ -127,15 +128,19 @@ export const useEditorStore = create<EditorState>((set, get) => {
         const updated = {
           components: state.components.map((comp) => {
             if (comp.id === id) {
-              // Handle special case for gallery images
-              if (props.images && typeof props.images === "string") {
-                try {
-                  props.images = JSON.parse(props.images);
-                } catch (e) {
-                  console.error("Failed to parse images", e);
+              const nextProps = { ...props };
+
+              if ("images" in nextProps && comp.type === "gallery") {
+                const normalizedImages = normalizeImagesProp(nextProps.images);
+
+                if (Array.isArray(normalizedImages)) {
+                  nextProps.images = normalizedImages;
+                } else {
+                  delete nextProps.images;
                 }
               }
-              return { ...comp, props: { ...comp.props, ...props } };
+
+              return { ...comp, props: { ...comp.props, ...nextProps } };
             }
             return comp;
           }),

@@ -7,6 +7,7 @@ import {
   ACCEPTED_IMAGE_UPLOAD_INPUT,
   prepareAndUploadImage,
 } from "@/lib/image-upload";
+import { AiImageGenerator } from "./AiImageGenerator";
 
 type ImageUploaderProps = {
   currentImageUrl?: string;
@@ -246,17 +247,13 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
 
           {activeTab === "ai" && (
             <div className="space-y-4">
-              <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
-                <p className="text-sm text-blue-800">
-                  AI image generation is available in the property panel. Use
-                  the generate button there to create custom images from text
-                  prompts.
-                </p>
-              </div>
-              <p className="text-sm text-gray-600">
-                Generated images can still be applied here after they have a
-                real URL.
-              </p>
+              <AiImageGenerator
+                onImageGenerated={(url) => {
+                  setError(null);
+                  setImageUrl(url);
+                  setPreviewUrl(url);
+                }}
+              />
             </div>
           )}
 

@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { generateImage } from '@/lib/replicate';
-import { X, Wand2 } from 'lucide-react';
+import React from "react";
+import { X } from "lucide-react";
+import { AiImageGenerator } from "./AiImageGenerator";
 
 type ImageGeneratorProps = {
   isOpen: boolean;
@@ -15,44 +15,9 @@ export const ImageGenerator: React.FC<ImageGeneratorProps> = ({
   onClose,
   onImageGenerated,
 }) => {
-  const [prompt, setPrompt] = useState('');
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [generatedImage, setGeneratedImage] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
   if (!isOpen) return null;
 
-  const handleGenerate = async () => {
-    if (!prompt.trim()) {
-      setError('Please enter a prompt');
-      return;
-    }
-
-    setIsGenerating(true);
-    setError(null);
-
-    try {
-      const imageUrl = await generateImage({ prompt });
-      setGeneratedImage(imageUrl);
-    } catch (err) {
-      setError('Failed to generate image. Please try again.');
-      console.error(err);
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-
-  const handleUseImage = () => {
-    if (generatedImage) {
-      onImageGenerated(generatedImage);
-      handleClose();
-    }
-  };
-
   const handleClose = () => {
-    setPrompt('');
-    setGeneratedImage(null);
-    setError(null);
     onClose();
   };
 
@@ -67,60 +32,12 @@ export const ImageGenerator: React.FC<ImageGeneratorProps> = ({
         </div>
 
         <div className="p-6 space-y-4">
-          {/* Prompt Input */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Describe the image you want to generate
-            </label>
-            <textarea
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              placeholder="A beautiful sunset over mountains, vibrant colors, photorealistic..."
-              rows={4}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
-
-          {/* Generate Button */}
-          <button
-            onClick={handleGenerate}
-            disabled={isGenerating}
-            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
-          >
-            <Wand2 size={18} />
-            {isGenerating ? 'Generating...' : 'Generate Image'}
-          </button>
-
-          {/* Error Message */}
-          {error && (
-            <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
-              {error}
-            </div>
-          )}
-
-          {/* Generated Image Preview */}
-          {generatedImage && (
-            <div className="space-y-4">
-              <img
-                src={generatedImage}
-                alt="Generated"
-                className="w-full rounded-lg border border-gray-200"
-              />
-              <button
-                onClick={handleUseImage}
-                className="w-full px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-              >
-                Use This Image
-              </button>
-            </div>
-          )}
-
-          {/* Loading State */}
-          {isGenerating && (
-            <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
-            </div>
-          )}
+          <AiImageGenerator
+            onUseImage={(url) => {
+              onImageGenerated(url);
+              handleClose();
+            }}
+          />
         </div>
       </div>
     </div>

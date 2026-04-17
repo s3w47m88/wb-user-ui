@@ -1,96 +1,233 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from "next/server";
+import {
+  AiImageProvider,
+  getConfiguredXAiApiKey,
+  resolveXAiAspectRatio,
+  resolveXAiResolution,
+} from "@/lib/ai-image-provider";
+import {
+  buildGeneratedImageFileName,
+  extractGeneratedImageBase64,
+  getConfiguredOpenAiApiKey,
+  OPENAI_IMAGE_MODELS,
+  resolveOpenAiImageSize,
+} from "@/lib/openai-image-generation";
+import { uploadImageBuffer } from "@/lib/server-image-storage";
+
+type GenerateImageRequest = {
+  height?: number;
+  pageId?: string | null;
+  prompt?: string;
+  provider?: AiImageProvider;
+  siteId?: string | null;
+  size?: string;
+  width?: number;
+};
+
+const OPENAI_IMAGE_API_URL = "https://api.openai.com/v1/images/generations";
+const XAI_IMAGE_API_URL = "https://api.x.ai/v1/images/generations";
+const XAI_IMAGE_MODEL = "grok-imagine-image";
+
+const getErrorMessage = (payload: unknown) => {
+  if (
+    typeof payload === "object" &&
+    payload !== null &&
+    "error" in payload &&
+    typeof payload.error === "object" &&
+    payload.error !== null &&
+    "message" in payload.error &&
+    typeof payload.error.message === "string"
+  ) {
+    return payload.error.message;
+  }
+
+  return "Failed to generate image.";
+};
 
 export async function POST(request: NextRequest) {
   try {
-    const { prompt, width = 1024, height = 1024 } = await request.json();
+    const {
+      prompt,
+      provider = "openai",
+      width,
+      height,
+      size,
+      siteId,
+      pageId,
+    } = (await request.json()) as GenerateImageRequest;
 
-    if (!prompt) {
-      return NextResponse.json({ error: 'Prompt is required' }, { status: 400 });
+    if (!prompt?.trim()) {
+      return NextResponse.json(
+        { error: "Prompt is required" },
+        { status: 400 },
+      );
     }
 
-    const replicateApiToken = process.env.REPLICATE_API_TOKEN;
+    if (provider === "xai") {
+      const xAiApiKey = getConfiguredXAiApiKey({
+        XAI_API_KEY: process.env.XAI_API_KEY,
+      });
 
-    if (!replicateApiToken) {
-      // Return a self-contained placeholder if API token not configured
-      console.warn('REPLICATE_API_TOKEN not configured, returning self-contained placeholder');
+      if (!xAiApiKey) {
+        return NextResponse.json(
+          {
+            error:
+              "XAI_API_KEY is not configured. Add it to wb-user-ui/.env and restart npm run dev.",
+          },
+          { status: 500 },
+        );
+      }
 
-      // Create a base64 encoded SVG placeholder
-      const svg = `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
-        <rect width="${width}" height="${height}" fill="#e0e0e0"/>
-        <text x="50%" y="50%" font-family="Arial, sans-serif" font-size="18" fill="#999999" text-anchor="middle" dy=".3em">
-          ${prompt.slice(0, 50)}${prompt.length > 50 ? '...' : ''}
-        </text>
-      </svg>`;
+      const aspectRatio = resolveXAiAspectRatio({ width, height });
+      const resolution = resolveXAiResolution({ width, height });
+      const response = await fetch(XAI_IMAGE_API_URL, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${xAiApiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          aspect_ratio: aspectRatio,
+          model: XAI_IMAGE_MODEL,
+          prompt: prompt.trim(),
+          resolution,
+          response_format: "b64_json",
+        }),
+      });
 
-      const base64Svg = Buffer.from(svg).toString('base64');
-      const dataUrl = `data:image/svg+xml;base64,${base64Svg}`;
+      const payload = (await response.json().catch(() => null)) as
+        | Record<string, unknown>
+        | null;
+
+      if (!response.ok) {
+        return NextResponse.json(
+          { error: getErrorMessage(payload) },
+          { status: response.status },
+        );
+      }
+
+      const imageBase64 = extractGeneratedImageBase64(payload);
+
+      if (!imageBase64) {
+        return NextResponse.json(
+          { error: "Grok did not return an image." },
+          { status: 502 },
+        );
+      }
+
+      const storedImage = await uploadImageBuffer({
+        bytes: Buffer.from(imageBase64, "base64"),
+        contentType: "image/jpeg",
+        originalName: `${buildGeneratedImageFileName(prompt).replace(/\.webp$/, "")}.jpg`,
+        pageId,
+        siteId,
+      });
 
       return NextResponse.json({
-        imageUrl: dataUrl,
+        aspectRatio,
+        bucket: storedImage.bucket,
+        imageUrl: storedImage.url,
+        model: XAI_IMAGE_MODEL,
+        path: storedImage.path,
+        provider,
+        resolution,
       });
     }
 
-    // Call Replicate API for Stable Diffusion
-    const response = await fetch('https://api.replicate.com/v1/predictions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Token ${replicateApiToken}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        version: 'stability-ai/sdxl:39ed52f2a78e934b3ba6e2a89f5b1c712de7dfea535525255b1aa35c5565e08b',
-        input: {
-          prompt,
-          width,
-          height,
-        },
-      }),
+    const openAiApiKey = getConfiguredOpenAiApiKey({
+      OPENAI_API_KEY: process.env.OPENAI_API_KEY,
+      REPLICATE_API_TOKEN: process.env.REPLICATE_API_TOKEN,
     });
 
-    if (!response.ok) {
-      throw new Error('Failed to start image generation');
+    if (!openAiApiKey) {
+      return NextResponse.json(
+        {
+          error:
+            "OPENAI_API_KEY is not configured. Add it to wb-user-ui/.env and restart npm run dev.",
+        },
+        { status: 500 },
+      );
     }
 
-    const prediction = await response.json();
+    const resolvedSize = resolveOpenAiImageSize({ width, height, size });
+    let lastErrorMessage = "Failed to generate image.";
 
-    // Poll for completion
-    let imageUrl = null;
-    let attempts = 0;
-    const maxAttempts = 60; // 60 seconds timeout
+    for (const model of OPENAI_IMAGE_MODELS) {
+      const response = await fetch(OPENAI_IMAGE_API_URL, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${openAiApiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model,
+          prompt: prompt.trim(),
+          n: 1,
+          output_compression: 90,
+          output_format: "webp",
+          quality: "medium",
+          size: resolvedSize,
+        }),
+      });
 
-    while (!imageUrl && attempts < maxAttempts) {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const payload = (await response.json().catch(() => null)) as
+        | Record<string, unknown>
+        | null;
 
-      const statusResponse = await fetch(
-        `https://api.replicate.com/v1/predictions/${prediction.id}`,
-        {
-          headers: {
-            'Authorization': `Token ${replicateApiToken}`,
-          },
+      if (!response.ok) {
+        lastErrorMessage = getErrorMessage(payload);
+
+        const shouldTryFallbackModel =
+          model !== OPENAI_IMAGE_MODELS[OPENAI_IMAGE_MODELS.length - 1] &&
+          response.status >= 400 &&
+          response.status < 500;
+
+        if (shouldTryFallbackModel) {
+          continue;
         }
-      );
 
-      const status = await statusResponse.json();
-
-      if (status.status === 'succeeded') {
-        imageUrl = status.output[0];
-      } else if (status.status === 'failed') {
-        throw new Error('Image generation failed');
+        return NextResponse.json(
+          { error: lastErrorMessage },
+          { status: response.status },
+        );
       }
 
-      attempts++;
+      const imageBase64 = extractGeneratedImageBase64(payload);
+
+      if (!imageBase64) {
+        return NextResponse.json(
+          { error: "OpenAI did not return an image." },
+          { status: 502 },
+        );
+      }
+
+      const storedImage = await uploadImageBuffer({
+        bytes: Buffer.from(imageBase64, "base64"),
+        contentType: "image/webp",
+        originalName: buildGeneratedImageFileName(prompt),
+        pageId,
+        siteId,
+      });
+
+      return NextResponse.json({
+        bucket: storedImage.bucket,
+        imageUrl: storedImage.url,
+        model,
+        path: storedImage.path,
+        provider,
+        size: resolvedSize,
+      });
     }
 
-    if (!imageUrl) {
-      throw new Error('Image generation timeout');
-    }
-
-    return NextResponse.json({ imageUrl });
-  } catch (error) {
-    console.error('Image generation error:', error);
     return NextResponse.json(
-      { error: 'Failed to generate image' },
-      { status: 500 }
+      { error: lastErrorMessage },
+      { status: 500 },
+    );
+  } catch (error) {
+    console.error("Image generation error:", error);
+    return NextResponse.json(
+      { error: "Failed to generate image" },
+      { status: 500 },
     );
   }
 }

@@ -1,72 +1,39 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
 import {
   BUILDER_PAGE_SLUG,
-  isValidUuid,
   LegacyPageRecord,
-  LegacySiteRecord,
   mapLegacyPageToPageConfig,
   normalizePageId,
   serializeBuilderPagePayload,
   toDatabasePageId,
 } from "@/lib/builder-pages";
+import {
+  assertOrganizationMembership,
+  getContentAdminClient,
+  loadLegacyPageAndSite,
+} from "../helpers";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_CONTENT_URL!;
-const supabaseServiceKey = process.env.SUPABASE_CONTENT_SECRET_KEY!;
 const getErrorMessage = (error: unknown) =>
   error instanceof Error ? error.message : "Unexpected error.";
-
-function getAdminClient() {
-  return createClient(supabaseUrl, supabaseServiceKey, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  });
-}
 
 type RouteParams = {
   params: Promise<{ id: string }>;
 };
 
-async function loadLegacyPageAndSite(
-  adminClient: ReturnType<typeof getAdminClient>,
-  rawId: string,
-) {
-  const pageId = normalizePageId(rawId);
-  if (!pageId) {
-    return { page: null, site: null };
-  }
-
-  const { data: page, error } = await adminClient
-    .from("pages")
-    .select("id, title, slug, content, site_id, created_at, updated_at")
-    .eq("id", toDatabasePageId(pageId))
-    .single();
-
-  if (error || !page) {
-    return { page: null, site: null };
-  }
-
-  const { data: site } = page.site_id
-    ? await adminClient
-        .from("sites")
-        .select("id, org_id, slug, name, domain")
-        .eq("id", page.site_id)
-        .single()
-    : { data: null };
-
-  return {
-    page: page as LegacyPageRecord,
-    site: (site as LegacySiteRecord | null) ?? null,
-  };
-}
-
-export async function GET(_request: Request, { params }: RouteParams) {
+export async function GET(request: Request, { params }: RouteParams) {
   try {
     const { id } = await params;
-    const adminClient = getAdminClient();
+    const adminClient = getContentAdminClient();
     const { page, site } = await loadLegacyPageAndSite(adminClient, id);
 
     if (!page) {
       return NextResponse.json({ message: "Page not found." }, { status: 404 });
+    }
+
+    const access = await assertOrganizationMembership(request, site?.org_id);
+
+    if (access.error) {
+      return access.error;
     }
 
     const builderPage = mapLegacyPageToPageConfig(page, site);
@@ -116,7 +83,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
       );
     }
 
-    const adminClient = getAdminClient();
+    const adminClient = getContentAdminClient();
     const { page: existingPage, site: existingSite } =
       await loadLegacyPageAndSite(adminClient, pageId);
 
@@ -124,13 +91,47 @@ export async function PATCH(request: Request, { params }: RouteParams) {
       return NextResponse.json({ message: "Page not found." }, { status: 404 });
     }
 
+    const access = await assertOrganizationMembership(
+      request,
+      existingSite?.org_id,
+    );
+
+    if (access.error) {
+      return access.error;
+    }
+
     const existingBuilderPage = mapLegacyPageToPageConfig(
       existingPage,
       existingSite,
     );
-    const normalizedSiteId = isValidUuid(site_id)
-      ? site_id
-      : existingPage.site_id;
+    let normalizedSiteId = existingPage.site_id;
+
+    if (typeof site_id === "string" && site_id.trim()) {
+      const { data: nextSite, error: siteError } = await adminClient
+        .from("sites")
+        .select("id, org_id")
+        .eq("id", site_id)
+        .single();
+
+      if (siteError || !nextSite) {
+        return NextResponse.json(
+          { message: siteError?.message || "Site not found." },
+          { status: 404 },
+        );
+      }
+
+      const siteAccess = await assertOrganizationMembership(
+        request,
+        nextSite.org_id,
+      );
+
+      if (siteAccess.error) {
+        return siteAccess.error;
+      }
+
+      normalizedSiteId = nextSite.id;
+    }
+
     const normalizedSiteDomain =
       typeof site_domain === "string" && site_domain.trim()
         ? site_domain.trim()
@@ -234,7 +235,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
   }
 }
 
-export async function DELETE(_request: Request, { params }: RouteParams) {
+export async function DELETE(request: Request, { params }: RouteParams) {
   try {
     const { id } = await params;
     const pageId = normalizePageId(id);
@@ -243,11 +244,17 @@ export async function DELETE(_request: Request, { params }: RouteParams) {
       return NextResponse.json({ message: "Page not found." }, { status: 404 });
     }
 
-    const adminClient = getAdminClient();
-    const { page } = await loadLegacyPageAndSite(adminClient, pageId);
+    const adminClient = getContentAdminClient();
+    const { page, site } = await loadLegacyPageAndSite(adminClient, pageId);
 
     if (!page) {
       return NextResponse.json({ message: "Page not found." }, { status: 404 });
+    }
+
+    const access = await assertOrganizationMembership(request, site?.org_id);
+
+    if (access.error) {
+      return access.error;
     }
 
     const { error: pageDeleteError } = await adminClient

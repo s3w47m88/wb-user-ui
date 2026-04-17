@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
 import {
   BUILDER_PAGE_SLUG,
   isValidUuid,
@@ -9,20 +8,16 @@ import {
   serializeBuilderPagePayload,
   slugify,
 } from "@/lib/builder-pages";
+import {
+  assertOrganizationMembership,
+  getContentAdminClient,
+} from "./helpers";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_CONTENT_URL!;
-const supabaseServiceKey = process.env.SUPABASE_CONTENT_SECRET_KEY!;
 const getErrorMessage = (error: unknown) =>
   error instanceof Error ? error.message : "Unexpected error.";
 
-function getAdminClient() {
-  return createClient(supabaseUrl, supabaseServiceKey, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  });
-}
-
 async function createSite(
-  adminClient: ReturnType<typeof getAdminClient>,
+  adminClient: ReturnType<typeof getContentAdminClient>,
   input: {
     organizationId: string;
     siteName: string;
@@ -71,7 +66,13 @@ export async function GET(request: Request) {
       return NextResponse.json([], { status: 200 });
     }
 
-    const adminClient = getAdminClient();
+    const access = await assertOrganizationMembership(request, organizationId);
+
+    if (access.error) {
+      return access.error;
+    }
+
+    const adminClient = getContentAdminClient();
     const { data: sites, error: sitesError } = await adminClient
       .from("sites")
       .select("id, org_id, slug, name, domain")
@@ -155,28 +156,50 @@ export async function POST(request: Request) {
       );
     }
 
-    const adminClient = getAdminClient();
+    const adminClient = getContentAdminClient();
     const normalizedSiteDomain =
       typeof site_domain === "string" && site_domain.trim()
         ? site_domain.trim()
         : null;
-    const site = isValidUuid(site_id)
-      ? ({
-          id: site_id,
-          org_id: organization_id || null,
-          slug: null,
-          name,
-          domain: normalizedSiteDomain,
-        } as LegacySiteRecord)
-      : isValidUuid(organization_id)
-        ? await createSite(adminClient, {
-            organizationId: organization_id,
-            siteName: name,
-            siteDomain: Boolean(use_temporary_domain)
-              ? null
-              : normalizedSiteDomain,
-          })
-        : null;
+    let site: LegacySiteRecord | null = null;
+
+    if (isValidUuid(site_id)) {
+      const { data: existingSite, error: siteError } = await adminClient
+        .from("sites")
+        .select("id, org_id, slug, name, domain")
+        .eq("id", site_id)
+        .single();
+
+      if (siteError || !existingSite) {
+        return NextResponse.json(
+          { message: siteError?.message || "Site not found." },
+          { status: 404 },
+        );
+      }
+
+      const access = await assertOrganizationMembership(
+        request,
+        existingSite.org_id,
+      );
+
+      if (access.error) {
+        return access.error;
+      }
+
+      site = existingSite as LegacySiteRecord;
+    } else if (isValidUuid(organization_id)) {
+      const access = await assertOrganizationMembership(request, organization_id);
+
+      if (access.error) {
+        return access.error;
+      }
+
+      site = await createSite(adminClient, {
+        organizationId: organization_id,
+        siteName: name,
+        siteDomain: Boolean(use_temporary_domain) ? null : normalizedSiteDomain,
+      });
+    }
 
     if (!site) {
       return NextResponse.json(

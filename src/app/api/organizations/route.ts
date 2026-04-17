@@ -1,69 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_CONTROL_URL!;
-const publishableKey =
-  process.env.NEXT_PUBLIC_SUPABASE_CONTROL_PUBLISHABLE_KEY!;
-const serviceRoleKey = process.env.SUPABASE_CONTROL_SECRET_KEY!;
-
-function getAuthClient() {
-  return createClient(supabaseUrl, publishableKey, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-    },
-  });
-}
-
-function getAdminClient() {
-  return createClient(supabaseUrl, serviceRoleKey, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-    },
-  });
-}
-
-async function getAuthenticatedUser(request: NextRequest) {
-  const authHeader = request.headers.get("authorization");
-  const accessToken = authHeader?.startsWith("Bearer ")
-    ? authHeader.slice(7)
-    : null;
-
-  if (!accessToken) {
-    return {
-      accessToken: null,
-      user: null,
-      error: NextResponse.json(
-        { success: false, error: "Missing access token" },
-        { status: 401 },
-      ),
-    };
-  }
-
-  const authClient = getAuthClient();
-  const {
-    data: { user },
-    error: userError,
-  } = await authClient.auth.getUser(accessToken);
-
-  if (userError || !user) {
-    return {
-      accessToken: null,
-      user: null,
-      error: NextResponse.json(
-        { success: false, error: userError?.message || "Unauthorized" },
-        { status: 401 },
-      ),
-    };
-  }
-
-  return {
-    accessToken,
-    user,
-    error: null,
-  };
-}
+import { normalizeOrganizationName } from "@/lib/organization-management";
+import { getAdminClient, getAuthenticatedUser } from "./helpers";
 
 export async function GET(request: NextRequest) {
   try {
@@ -144,7 +81,7 @@ export async function POST(request: NextRequest) {
     }
 
     const { name } = await request.json();
-    const trimmedName = typeof name === "string" ? name.trim() : "";
+    const trimmedName = normalizeOrganizationName(name);
 
     if (!trimmedName) {
       return NextResponse.json(
