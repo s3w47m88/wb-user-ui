@@ -76,6 +76,22 @@ export const SectionSettingsPanel: React.FC<SectionSettingsPanelProps> = ({
   onClose,
   onSave,
 }) => {
+  const setBackgroundMode = (
+    nextMode: "inherit" | "color" | "gradient" | "image",
+  ) => {
+    const nextValue: SectionStyleConfig = {
+      ...value,
+      backgroundMode: nextMode,
+    };
+
+    // Image mode should default to showing the uploaded asset, not a solid overlay.
+    if (nextMode === "image" && value.backgroundOpacity === 100) {
+      nextValue.backgroundOpacity = 0;
+    }
+
+    onChange(nextValue);
+  };
+
   const updateField = <K extends keyof SectionStyleConfig>(
     key: K,
     fieldValue: SectionStyleConfig[K],
@@ -288,8 +304,7 @@ export const SectionSettingsPanel: React.FC<SectionSettingsPanelProps> = ({
             <select
               value={value.backgroundMode}
               onChange={(event) =>
-                updateField(
-                  "backgroundMode",
+                setBackgroundMode(
                   event.target.value as
                     | "inherit"
                     | "color"
@@ -311,7 +326,9 @@ export const SectionSettingsPanel: React.FC<SectionSettingsPanelProps> = ({
           {value.backgroundMode !== "inherit" && (
             <div>
               <label className="mb-2 block text-sm font-medium text-gray-700">
-                Transparency
+                {value.backgroundMode === "image"
+                  ? "Overlay Strength"
+                  : "Transparency"}
               </label>
               <div className="flex items-center gap-3">
                 <input
@@ -400,7 +417,14 @@ export const SectionSettingsPanel: React.FC<SectionSettingsPanelProps> = ({
                 label="Background Image"
                 value={value.backgroundImage}
                 onChange={(fieldValue) =>
-                  updateField("backgroundImage", fieldValue)
+                  onChange({
+                    ...value,
+                    backgroundImage: fieldValue,
+                    backgroundOpacity:
+                      value.backgroundOpacity === 100
+                        ? 0
+                        : value.backgroundOpacity,
+                  })
                 }
                 onSave={onSave}
                 placeholder="https://example.com/hero.webp"

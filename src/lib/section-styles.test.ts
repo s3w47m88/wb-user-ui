@@ -98,6 +98,23 @@ test("buildSectionBackgroundStyle returns explicit gradient and image overrides"
     backgroundPosition: "center",
     backgroundRepeat: "no-repeat",
   });
+
+  const rawImageStyle = buildSectionBackgroundStyle({
+    ...defaultSectionStyleConfig,
+    backgroundMode: "image",
+    backgroundImage: "https://example.com/raw-bg.jpg",
+    backgroundColor: "#676008",
+    backgroundOpacity: 0,
+  });
+
+  assert.deepEqual(rawImageStyle, {
+    backgroundColor: "#676008",
+    backgroundImage:
+      "linear-gradient(rgba(103, 96, 8, 0), rgba(103, 96, 8, 0)), url(https://example.com/raw-bg.jpg)",
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+    backgroundRepeat: "no-repeat",
+  });
 });
 
 test("withOpacity keeps unknown color strings untouched", () => {
