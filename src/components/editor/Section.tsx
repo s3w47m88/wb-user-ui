@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { Plus, Settings, Trash2 } from "lucide-react";
 import { ComponentPicker } from "./ComponentPicker";
+import { BrandedSelect } from "@/components/ui/BrandedSelect";
 
 type SectionLayout = {
   columns: number;
@@ -155,34 +156,34 @@ export const Section: React.FC<SectionProps> = ({
                 <label className="block text-sm font-medium mb-1">
                   Padding
                 </label>
-                <select
+                <BrandedSelect
                   value={style.padding}
                   onChange={(e) =>
                     onUpdateStyle({ ...style, padding: e.target.value })
                   }
-                  className="w-full px-2 py-1 border rounded"
+                  chromeSize="sm"
                 >
                   <option value="0">None</option>
                   <option value="1rem">Small (1rem)</option>
                   <option value="2rem">Medium (2rem)</option>
                   <option value="4rem">Large (4rem)</option>
-                </select>
+                </BrandedSelect>
               </div>
 
               <div>
                 <label className="block text-sm font-medium mb-1">Margin</label>
-                <select
+                <BrandedSelect
                   value={style.margin}
                   onChange={(e) =>
                     onUpdateStyle({ ...style, margin: e.target.value })
                   }
-                  className="w-full px-2 py-1 border rounded"
+                  chromeSize="sm"
                 >
                   <option value="0">None</option>
                   <option value="1rem 0">Small (1rem)</option>
                   <option value="2rem 0">Medium (2rem)</option>
                   <option value="4rem 0">Large (4rem)</option>
-                </select>
+                </BrandedSelect>
               </div>
 
               <div>

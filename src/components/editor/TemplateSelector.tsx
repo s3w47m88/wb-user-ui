@@ -206,6 +206,7 @@ const TemplatePreview: React.FC<{ template: PageTemplate }> = ({ template }) => 
 
     loadPageToStore({
       id: 'preview',
+      document_type: 'page',
       name: template.name,
       components: template.components,
       theme: template.theme,
@@ -214,6 +215,7 @@ const TemplatePreview: React.FC<{ template: PageTemplate }> = ({ template }) => 
     return () => {
       loadPageToStore({
         id: 'preview',
+        document_type: 'page',
         name: restoreState.pageName,
         components: restoreState.components,
         theme: restoreState.theme,

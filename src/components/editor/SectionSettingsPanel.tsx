@@ -20,6 +20,7 @@ import {
   SECTION_WIDTH_MODES,
 } from "@/lib/section-styles";
 import { ImageUploadField } from "./ImageUploadField";
+import { BrandedSelect } from "@/components/ui/BrandedSelect";
 
 type SectionSettingsPanelProps = {
   value: SectionStyleConfig;
@@ -156,7 +157,7 @@ export const SectionSettingsPanel: React.FC<SectionSettingsPanelProps> = ({
               <label className="mb-2 block text-sm font-medium text-gray-700">
                 Width
               </label>
-              <select
+              <BrandedSelect
                 value={value.widthMode}
                 onChange={(event) =>
                   updateField(
@@ -165,21 +166,21 @@ export const SectionSettingsPanel: React.FC<SectionSettingsPanelProps> = ({
                   )
                 }
                 onBlur={onSave}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+                chromeSize="sm"
               >
                 {SECTION_WIDTH_MODES.map((mode) => (
                   <option key={mode.value} value={mode.value}>
                     {mode.label}
                   </option>
                 ))}
-              </select>
+              </BrandedSelect>
             </div>
 
             <div>
               <label className="mb-2 block text-sm font-medium text-gray-700">
                 Height
               </label>
-              <select
+              <BrandedSelect
                 value={value.heightMode}
                 onChange={(event) =>
                   updateField(
@@ -188,14 +189,14 @@ export const SectionSettingsPanel: React.FC<SectionSettingsPanelProps> = ({
                   )
                 }
                 onBlur={onSave}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+                chromeSize="sm"
               >
                 {SECTION_HEIGHT_MODES.map((mode) => (
                   <option key={mode.value} value={mode.value}>
                     {mode.label}
                   </option>
                 ))}
-              </select>
+              </BrandedSelect>
             </div>
           </div>
 
@@ -301,7 +302,7 @@ export const SectionSettingsPanel: React.FC<SectionSettingsPanelProps> = ({
             <label className="mb-2 block text-sm font-medium text-gray-700">
               Background Type
             </label>
-            <select
+            <BrandedSelect
               value={value.backgroundMode}
               onChange={(event) =>
                 setBackgroundMode(
@@ -313,14 +314,14 @@ export const SectionSettingsPanel: React.FC<SectionSettingsPanelProps> = ({
                 )
               }
               onBlur={onSave}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+              chromeSize="sm"
             >
               {SECTION_BACKGROUND_MODES.map((mode) => (
                 <option key={mode.value} value={mode.value}>
                   {mode.label}
                 </option>
               ))}
-            </select>
+            </BrandedSelect>
           </div>
 
           {value.backgroundMode !== "inherit" && (
@@ -384,7 +385,7 @@ export const SectionSettingsPanel: React.FC<SectionSettingsPanelProps> = ({
                 <label className="mb-2 block text-sm font-medium text-gray-700">
                   Direction
                 </label>
-                <select
+                <BrandedSelect
                   value={value.gradientDirection}
                   onChange={(event) =>
                     updateField(
@@ -399,14 +400,14 @@ export const SectionSettingsPanel: React.FC<SectionSettingsPanelProps> = ({
                     )
                   }
                   onBlur={onSave}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+                  chromeSize="sm"
                 >
                   {SECTION_GRADIENT_DIRECTIONS.map((direction) => (
                     <option key={direction.value} value={direction.value}>
                       {direction.label}
                     </option>
                   ))}
-                </select>
+                </BrandedSelect>
               </div>
             </>
           )}
@@ -444,7 +445,7 @@ export const SectionSettingsPanel: React.FC<SectionSettingsPanelProps> = ({
                   <label className="mb-2 block text-sm font-medium text-gray-700">
                     Size
                   </label>
-                  <select
+                  <BrandedSelect
                     value={value.backgroundSize}
                     onChange={(event) =>
                       updateField(
@@ -453,21 +454,21 @@ export const SectionSettingsPanel: React.FC<SectionSettingsPanelProps> = ({
                       )
                     }
                     onBlur={onSave}
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+                    chromeSize="sm"
                   >
                     {SECTION_BACKGROUND_SIZES.map((option) => (
                       <option key={option.value} value={option.value}>
                         {option.label}
                       </option>
                     ))}
-                  </select>
+                  </BrandedSelect>
                 </div>
 
                 <div>
                   <label className="mb-2 block text-sm font-medium text-gray-700">
                     Position
                   </label>
-                  <select
+                  <BrandedSelect
                     value={value.backgroundPosition}
                     onChange={(event) =>
                       updateField(
@@ -481,14 +482,14 @@ export const SectionSettingsPanel: React.FC<SectionSettingsPanelProps> = ({
                       )
                     }
                     onBlur={onSave}
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+                    chromeSize="sm"
                   >
                     {SECTION_BACKGROUND_POSITIONS.map((option) => (
                       <option key={option.value} value={option.value}>
                         {option.label}
                       </option>
                     ))}
-                  </select>
+                  </BrandedSelect>
                 </div>
               </div>
 
@@ -496,7 +497,7 @@ export const SectionSettingsPanel: React.FC<SectionSettingsPanelProps> = ({
                 <label className="mb-2 block text-sm font-medium text-gray-700">
                   Hero Effect
                 </label>
-                <select
+                <BrandedSelect
                   value={value.heroEffect}
                   onChange={(event) =>
                     updateField(
@@ -510,14 +511,14 @@ export const SectionSettingsPanel: React.FC<SectionSettingsPanelProps> = ({
                     )
                   }
                   onBlur={onSave}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+                  chromeSize="sm"
                 >
                   {SECTION_HERO_EFFECTS.map((option) => (
                     <option key={option.value} value={option.value}>
                       {option.label}
                     </option>
                   ))}
-                </select>
+                </BrandedSelect>
                 <p className="mt-2 text-xs text-gray-500">
                   Only hero sections use this. Choose no effect to show the raw
                   background image.

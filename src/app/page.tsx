@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState, useEffect } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { Toolbar } from "@/components/editor/Toolbar";
 import { Canvas } from "@/components/editor/Canvas";
 import { OnboardingWizard } from "@/components/editor/OnboardingWizard";
@@ -9,52 +9,67 @@ import { ShareLink } from "@/components/editor/ShareLink";
 import { EnvironmentIndicator } from "@/components/editor/EnvironmentIndicator";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { useEditorStore } from "@/store/editor-store";
-import { getAllPages } from "@/lib/page-service";
+import {
+  listSites,
+  loadSiteResources,
+  loadPost,
+} from "@/lib/cms-service";
+import { loadPage } from "@/lib/page-service";
+import { CmsDataProvider } from "@/components/cms/CmsDataContext";
+import { PropertyPanel } from "@/components/editor/PropertyPanel";
+import { MenuConfig, PageConfig, PostConfig, SiteConfig } from "@/lib/supabase-content";
 
 function EditorContent() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showSelectSite, setShowSelectSite] = useState(false);
   const [showShareLink, setShowShareLink] = useState(false);
   const [loading, setLoading] = useState(true);
-  const { currentPageId, components } = useEditorStore();
+  const [refreshNonce, setRefreshNonce] = useState(0);
+  const [cmsData, setCmsData] = useState<{
+    site: SiteConfig | null;
+    pages: PageConfig[];
+    posts: PostConfig[];
+    menus: MenuConfig[];
+  }>({
+    site: null,
+    pages: [],
+    posts: [],
+    menus: [],
+  });
+  const { currentPageId, components, documentType, siteId } = useEditorStore();
 
   useEffect(() => {
     const checkOnboarding = async () => {
       try {
-        // Check if there are any existing pages
-        const pages = await getAllPages();
+        const sites = await listSites();
 
-        // If no pages exist, show onboarding
-        if (pages.length === 0) {
+        if (sites.length === 0) {
           setShowOnboarding(true);
           setShowSelectSite(false);
-        }
-        // If pages exist but no site is loaded, prompt to select one
-        else if (!currentPageId) {
+        } else if (!currentPageId) {
           setShowOnboarding(false);
           setShowSelectSite(true);
-        }
-        // Otherwise, a site is loaded, show the editor
-        else {
-          // Load the page data if currentPageId exists but components are empty
+        } else {
           if (components.length === 0) {
             try {
-              const { loadPage } = await import("@/lib/page-service");
-              const loadPageToStore = useEditorStore.getState().loadPage;
-              const page = await loadPage(currentPageId);
-              loadPageToStore(page);
+              if (documentType === "post") {
+                const post = await loadPost(currentPageId);
+                useEditorStore.getState().loadPost(post);
+              } else {
+                const page = await loadPage(currentPageId);
+                useEditorStore.getState().loadPage(page);
+              }
             } catch (error) {
-              console.error("Failed to load page:", error);
-              // If page no longer exists, prompt to select
+              console.error("Failed to load document:", error);
               setShowSelectSite(true);
             }
           }
+
           setShowOnboarding(false);
           setShowSelectSite(false);
         }
       } catch (error) {
-        console.error("Failed to check pages:", error);
-        // On error, show onboarding as fallback
+        console.error("Failed to check sites:", error);
         setShowOnboarding(true);
         setShowSelectSite(false);
       } finally {
@@ -62,14 +77,46 @@ function EditorContent() {
       }
     };
 
-    checkOnboarding();
-  }, [currentPageId, components.length]);
+    void checkOnboarding();
+  }, [components.length, currentPageId, documentType, refreshNonce]);
+
+  useEffect(() => {
+    const refreshCmsData = async () => {
+      if (!siteId) {
+        setCmsData({
+          site: null,
+          pages: [],
+          posts: [],
+          menus: [],
+        });
+        return;
+      }
+
+      try {
+        const [sites, siteResources] = await Promise.all([
+          listSites(),
+          loadSiteResources(siteId),
+        ]);
+
+        setCmsData({
+          site: sites.find((site) => site.id === siteId) || null,
+          pages: siteResources.pages,
+          posts: siteResources.posts,
+          menus: siteResources.menus,
+        });
+      } catch (error) {
+        console.error("Failed to refresh CMS data:", error);
+      }
+    };
+
+    void refreshCmsData();
+  }, [currentPageId, documentType, refreshNonce, siteId]);
 
   const handleOnboardingComplete = () => {
     setShowOnboarding(false);
     setShowSelectSite(false);
-    // Force a re-check after onboarding completes
     setLoading(true);
+    setRefreshNonce((current) => current + 1);
   };
 
   const handleCreateNewSite = () => {
@@ -88,7 +135,9 @@ function EditorContent() {
   if (showOnboarding) {
     return (
       <div className="h-screen flex flex-col">
-        <Toolbar onCreateNewSite={handleCreateNewSite} />
+        <Toolbar
+          onCmsMutated={() => setRefreshNonce((current) => current + 1)}
+        />
         <div className="flex-1 overflow-auto">
           <OnboardingWizard
             isOpen={showOnboarding}
@@ -103,15 +152,16 @@ function EditorContent() {
   if (showSelectSite) {
     return (
       <div className="h-screen flex flex-col">
-        <Toolbar onCreateNewSite={handleCreateNewSite} />
+        <Toolbar
+          onCmsMutated={() => setRefreshNonce((current) => current + 1)}
+        />
         <div className="flex-1 flex items-center justify-center bg-gray-50 overflow-auto">
           <div className="text-center max-w-md px-6">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">
-              Welcome Back!
+              Pick a Site
             </h2>
             <p className="text-gray-600 mb-8">
-              You have existing sites. Please select one from &quot;My
-              Sites&quot; to continue editing, or create a new one.
+              Open the CMS navigator to choose a site, page, post, or menu to work on.
             </p>
             <div className="flex flex-col gap-4">
               <button
@@ -123,7 +173,7 @@ function EditorContent() {
                 }}
                 className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-semibold"
               >
-                Open My Sites
+                Open CMS Navigator
               </button>
               <button
                 onClick={handleCreateNewSite}
@@ -140,18 +190,30 @@ function EditorContent() {
   }
 
   return (
-    <div className="h-screen flex flex-col">
-      <Toolbar onCreateNewSite={handleCreateNewSite} />
-      <div className="flex-1 overflow-auto">
-        <Canvas />
+    <CmsDataProvider
+      site={cmsData.site}
+      pages={cmsData.pages}
+      posts={cmsData.posts}
+      menus={cmsData.menus}
+    >
+      <div className="h-screen flex flex-col">
+        <Toolbar
+          onCmsMutated={() => setRefreshNonce((current) => current + 1)}
+        />
+        <div className="flex flex-1 overflow-hidden">
+          <div className="flex-1 overflow-auto">
+            <Canvas />
+          </div>
+          <PropertyPanel />
+        </div>
+        <FloatingEditButton onShareClick={() => setShowShareLink(true)} />
+        <ShareLink
+          isOpen={showShareLink}
+          onClose={() => setShowShareLink(false)}
+        />
+        <EnvironmentIndicator />
       </div>
-      <FloatingEditButton onShareClick={() => setShowShareLink(true)} />
-      <ShareLink
-        isOpen={showShareLink}
-        onClose={() => setShowShareLink(false)}
-      />
-      <EnvironmentIndicator />
-    </div>
+    </CmsDataProvider>
   );
 }
 

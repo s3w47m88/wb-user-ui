@@ -16,6 +16,7 @@ import {
   Type,
   Palette,
 } from "lucide-react";
+import { BrandedSelect } from "@/components/ui/BrandedSelect";
 
 type FloatingTextToolbarProps = {
   isVisible: boolean;
@@ -162,10 +163,11 @@ export const FloatingTextToolbar: React.FC<FloatingTextToolbarProps> = ({
       {/* Font Size */}
       <div className="flex items-center gap-1 border-r border-gray-200 pr-2">
         <Type size={16} className="text-gray-500" />
-        <select
+        <BrandedSelect
           value={fontSize}
           onChange={(e) => handleFontSize(e.target.value)}
-          className="px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+          chromeSize="sm"
+          className="min-w-[5.5rem]"
         >
           <option value="12">12px</option>
           <option value="14">14px</option>
@@ -177,7 +179,7 @@ export const FloatingTextToolbar: React.FC<FloatingTextToolbarProps> = ({
           <option value="32">32px</option>
           <option value="36">36px</option>
           <option value="48">48px</option>
-        </select>
+        </BrandedSelect>
       </div>
 
       {/* Colors */}

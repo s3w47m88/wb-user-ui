@@ -68,6 +68,11 @@ import {
   QuoteComponent,
   quoteComponentConfig,
 } from "@/components/blocks/QuoteComponent";
+import { MenuBlock, menuBlockConfig } from "@/components/blocks/MenuBlock";
+import {
+  PostListBlock,
+  postListBlockConfig,
+} from "@/components/blocks/PostListBlock";
 
 export type BlockConfig = {
   type: string;
@@ -91,7 +96,9 @@ export const blockRegistry: Record<
   footer: { component: FooterBlock, config: footerBlockConfig },
   about: { component: AboutBlock, config: aboutBlockConfig },
   news: { component: NewsBlock, config: newsBlockConfig },
+  "post-list": { component: PostListBlock, config: postListBlockConfig },
   grid: { component: GridBlock, config: gridBlockConfig },
+  menu: { component: MenuBlock, config: menuBlockConfig },
 
   // Components
   button: { component: ButtonComponent, config: buttonComponentConfig },

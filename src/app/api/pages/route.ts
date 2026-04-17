@@ -1,69 +1,67 @@
 import { NextResponse } from "next/server";
 import {
-  BUILDER_PAGE_SLUG,
+  createDefaultHomePageDocument,
   isValidUuid,
   LegacyPageRecord,
-  LegacySiteRecord,
   mapLegacyPageToPageConfig,
   serializeBuilderPagePayload,
   slugify,
 } from "@/lib/builder-pages";
 import {
   assertOrganizationMembership,
+  createSiteRecord,
+  ensureSiteAccess,
+  ensureUniqueRecordSlug,
   getContentAdminClient,
+  getSiteIdsForOrganization,
+  PAGE_SELECT,
+  SITE_SELECT,
 } from "./helpers";
 
 const getErrorMessage = (error: unknown) =>
   error instanceof Error ? error.message : "Unexpected error.";
 
-async function createSite(
-  adminClient: ReturnType<typeof getContentAdminClient>,
-  input: {
-    organizationId: string;
-    siteName: string;
-    siteDomain: string | null;
-  },
-) {
-  const baseSlug = slugify(input.siteName);
-  const slugCandidates = [
-    baseSlug,
-    `${baseSlug}-${crypto.randomUUID().slice(0, 8)}`,
-  ];
-  let lastError: { message: string } | null = null;
-
-  for (const candidate of slugCandidates) {
-    const { data, error } = await adminClient
-      .from("sites")
-      .insert({
-        org_id: input.organizationId,
-        slug: candidate,
-        name: input.siteName,
-        business_name: input.siteName,
-        domain: input.siteDomain,
-      })
-      .select("id, org_id, slug, name, domain")
-      .single();
-
-    if (!error) {
-      return data as LegacySiteRecord;
-    }
-
-    lastError = error;
-    if (error.code !== "23505") {
-      break;
-    }
-  }
-
-  throw new Error(lastError?.message || "Failed to create site.");
-}
-
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const organizationId = searchParams.get("organization_id");
+    const siteId = searchParams.get("site_id");
+    const adminClient = getContentAdminClient();
+
+    if (isValidUuid(siteId)) {
+      const access = await ensureSiteAccess(request, adminClient, siteId);
+
+      if (access.error) {
+        return access.error;
+      }
+
+      const { data: pages, error } = await adminClient
+        .from("pages")
+        .select(PAGE_SELECT)
+        .eq("site_id", siteId)
+        .order("updated_at", { ascending: false });
+
+      if (error) {
+        return NextResponse.json(
+          { message: error.message, code: error.code, error },
+          { status: 400 },
+        );
+      }
+
+      const pageConfigs = (pages || [])
+        .map((page) =>
+          mapLegacyPageToPageConfig(
+            page as LegacyPageRecord,
+            access.site,
+          ),
+        )
+        .filter((page): page is NonNullable<typeof page> => Boolean(page));
+
+      return NextResponse.json(pageConfigs);
+    }
 
     if (!isValidUuid(organizationId)) {
-      return NextResponse.json([], { status: 200 });
+      return NextResponse.json([]);
     }
 
     const access = await assertOrganizationMembership(request, organizationId);
@@ -72,51 +70,38 @@ export async function GET(request: Request) {
       return access.error;
     }
 
-    const adminClient = getContentAdminClient();
-    const { data: sites, error: sitesError } = await adminClient
-      .from("sites")
-      .select("id, org_id, slug, name, domain")
-      .eq("org_id", organizationId);
+    const siteIds = await getSiteIdsForOrganization(adminClient, organizationId);
 
-    if (sitesError) {
-      return NextResponse.json(
-        {
-          message: sitesError.message,
-          code: sitesError.code,
-          error: sitesError,
-        },
-        { status: 400 },
-      );
-    }
-
-    if (!sites || sites.length === 0) {
+    if (siteIds.length === 0) {
       return NextResponse.json([]);
     }
 
-    const siteMap = new Map<string, LegacySiteRecord>(
-      sites.map((site) => [site.id, site as LegacySiteRecord]),
-    );
-    const { data: pages, error: pagesError } = await adminClient
-      .from("pages")
-      .select("id, title, slug, content, site_id, created_at, updated_at")
-      .in(
-        "site_id",
-        sites.map((site) => site.id),
-      )
-      .order("updated_at", { ascending: false });
+    const [{ data: pages, error: pagesError }, { data: sites, error: sitesError }] =
+      await Promise.all([
+        adminClient
+          .from("pages")
+          .select(PAGE_SELECT)
+          .in("site_id", siteIds)
+          .order("updated_at", { ascending: false }),
+        adminClient.from("sites").select(SITE_SELECT).in("id", siteIds),
+      ]);
 
-    if (pagesError) {
+    if (pagesError || sitesError) {
       return NextResponse.json(
         {
-          message: pagesError.message,
-          code: pagesError.code,
-          error: pagesError,
+          message: pagesError?.message || sitesError?.message || "Failed to load pages.",
+          code: pagesError?.code || sitesError?.code,
+          error: pagesError || sitesError,
         },
         { status: 400 },
       );
     }
 
-    const builderPages = (pages || [])
+    const siteMap = new Map(
+      (sites || []).map((site) => [site.id, site]),
+    );
+
+    const pageConfigs = (pages || [])
       .map((page) =>
         mapLegacyPageToPageConfig(
           page as LegacyPageRecord,
@@ -125,7 +110,7 @@ export async function GET(request: Request) {
       )
       .filter((page): page is NonNullable<typeof page> => Boolean(page));
 
-    return NextResponse.json(builderPages);
+    return NextResponse.json(pageConfigs);
   } catch (error: unknown) {
     return NextResponse.json(
       { message: getErrorMessage(error) },
@@ -139,17 +124,21 @@ export async function POST(request: Request) {
     const body = await request.json();
     const {
       site_id,
+      organization_id,
       name,
-      title,
       slug,
+      meta_title,
+      meta_description,
+      meta_keywords,
+      excerpt,
+      status,
       components,
       theme,
-      organization_id,
       site_domain,
       use_temporary_domain,
     } = body || {};
 
-    if (!name || !components || !theme) {
+    if (!name || (!site_id && !organization_id)) {
       return NextResponse.json(
         { message: "Missing required fields." },
         { status: 400 },
@@ -157,36 +146,16 @@ export async function POST(request: Request) {
     }
 
     const adminClient = getContentAdminClient();
-    const normalizedSiteDomain =
-      typeof site_domain === "string" && site_domain.trim()
-        ? site_domain.trim()
-        : null;
-    let site: LegacySiteRecord | null = null;
+    let site = null;
 
     if (isValidUuid(site_id)) {
-      const { data: existingSite, error: siteError } = await adminClient
-        .from("sites")
-        .select("id, org_id, slug, name, domain")
-        .eq("id", site_id)
-        .single();
-
-      if (siteError || !existingSite) {
-        return NextResponse.json(
-          { message: siteError?.message || "Site not found." },
-          { status: 404 },
-        );
-      }
-
-      const access = await assertOrganizationMembership(
-        request,
-        existingSite.org_id,
-      );
+      const access = await ensureSiteAccess(request, adminClient, site_id);
 
       if (access.error) {
         return access.error;
       }
 
-      site = existingSite as LegacySiteRecord;
+      site = access.site;
     } else if (isValidUuid(organization_id)) {
       const access = await assertOrganizationMembership(request, organization_id);
 
@@ -194,45 +163,58 @@ export async function POST(request: Request) {
         return access.error;
       }
 
-      site = await createSite(adminClient, {
+      site = await createSiteRecord(adminClient, {
         organizationId: organization_id,
         siteName: name,
-        siteDomain: Boolean(use_temporary_domain) ? null : normalizedSiteDomain,
+        siteDomain:
+          use_temporary_domain === true ? null : site_domain?.trim() || null,
       });
     }
 
     if (!site) {
       return NextResponse.json(
-        { message: "Missing organization_id to create a new site." },
-        { status: 400 },
+        { message: "Site not found." },
+        { status: 404 },
       );
     }
 
-    const payload = serializeBuilderPagePayload({
-      name,
-      components,
-      theme,
-      siteDomain: site.domain ?? normalizedSiteDomain,
-      useTemporaryDomain: Boolean(use_temporary_domain),
+    const defaultDocument = createDefaultHomePageDocument(name);
+    const pageSlug = await ensureUniqueRecordSlug(adminClient, {
+      table: "pages",
+      siteId: site.id!,
+      desiredSlug: slug?.trim() || slugify(name),
     });
+    const pageName = name.trim();
+    const payload = serializeBuilderPagePayload({
+      name: pageName,
+      components: components ?? defaultDocument.components,
+      theme: theme ?? defaultDocument.theme,
+      siteDomain: site.domain ?? null,
+      useTemporaryDomain:
+        use_temporary_domain === undefined
+          ? !Boolean(site.domain?.trim())
+          : Boolean(use_temporary_domain),
+    });
+
     const { data, error } = await adminClient
       .from("pages")
       .insert({
         site_id: site.id,
-        title: title || name,
-        slug: slug || BUILDER_PAGE_SLUG,
+        title: pageName,
+        slug: pageSlug,
         content: payload,
-        status: "draft",
-        meta_title: title || name,
-        meta_description: `Website builder page for ${name}`,
-        excerpt: `Website builder page for ${name}`,
+        meta_title: meta_title || pageName,
+        meta_description: meta_description || excerpt || null,
+        meta_keywords: meta_keywords || null,
+        excerpt: excerpt || null,
+        status: status || "draft",
       })
-      .select("id, title, slug, content, site_id, created_at, updated_at")
+      .select(PAGE_SELECT)
       .single();
 
-    if (error) {
+    if (error || !data) {
       return NextResponse.json(
-        { message: error.message, code: error.code, error },
+        { message: error?.message || "Failed to create page.", code: error?.code, error },
         { status: 400 },
       );
     }

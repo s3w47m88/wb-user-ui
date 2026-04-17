@@ -1,10 +1,25 @@
 import { create } from "zustand";
-import { ComponentData, ThemeConfig, PageConfig } from "@/lib/supabase-content";
-import { savePage, updatePage } from "@/lib/page-service";
+import {
+  CmsDocument,
+  ComponentData,
+  DocumentStatus,
+  DocumentType,
+  PageConfig,
+  PostConfig,
+  ThemeConfig,
+} from "@/lib/supabase-content";
+import {
+  createPage,
+  createPost,
+  loadDocumentBundle,
+  updatePage,
+  updatePost,
+} from "@/lib/cms-service";
 import {
   defaultTheme,
   isValidUuid,
   normalizePageId,
+  slugify,
 } from "@/lib/builder-pages";
 import { normalizeImagesProp } from "@/lib/editor-images";
 
@@ -16,10 +31,20 @@ type EditorState = {
   currentPageId: string | null;
   siteId: string | null;
   pageName: string;
+  documentType: DocumentType;
+  slug: string;
+  metaTitle: string;
+  metaDescription: string;
+  metaKeywords: string;
+  excerpt: string;
+  status: DocumentStatus;
+  menuTitle: string;
+  author: string;
+  publishedDate: string;
+  featuredImageUrl: string;
   autoSaveTimeout: NodeJS.Timeout | null;
   isSaving: boolean;
 
-  // Actions
   addComponent: (type: string, props: Record<string, unknown>) => void;
   updateComponent: (id: string, props: Record<string, unknown>) => void;
   removeComponent: (id: string) => void;
@@ -29,19 +54,47 @@ type EditorState = {
   setEditing: (isEditing: boolean) => void;
   resetEditor: () => void;
   loadPage: (page: PageConfig) => void;
+  loadPost: (post: PostConfig) => void;
+  loadDocument: (document: CmsDocument) => void;
   setPageName: (name: string) => void;
   setCurrentPageId: (id: string | null) => void;
+  setDocumentType: (documentType: DocumentType) => void;
+  updateDocumentMeta: (
+    patch: Partial<{
+      slug: string;
+      metaTitle: string;
+      metaDescription: string;
+      metaKeywords: string;
+      excerpt: string;
+      status: DocumentStatus;
+      menuTitle: string;
+      author: string;
+      publishedDate: string;
+      featuredImageUrl: string;
+    }>,
+  ) => void;
+  setSiteId: (siteId: string | null) => void;
   triggerAutoSave: () => void;
   saveNow: () => void;
 };
 
-// Initialize currentPageId from localStorage if available
-const getInitialPageId = (): string | null => {
+const getInitialDocumentId = (): string | null => {
   if (typeof window !== "undefined") {
-    const storedId = localStorage.getItem("currentPageId");
+    const storedId =
+      localStorage.getItem("currentDocumentId") ||
+      localStorage.getItem("currentPageId");
     return normalizePageId(storedId);
   }
+
   return null;
+};
+
+const getInitialDocumentType = (): DocumentType => {
+  if (typeof window === "undefined") {
+    return "page";
+  }
+
+  return localStorage.getItem("currentDocumentType") === "post" ? "post" : "page";
 };
 
 export const useEditorStore = create<EditorState>((set, get) => {
@@ -53,48 +106,104 @@ export const useEditorStore = create<EditorState>((set, get) => {
       ? error.code
       : undefined;
 
+  const persistDocumentSelection = (documentId: string | null, documentType: DocumentType) => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    if (documentId) {
+      localStorage.setItem("currentDocumentId", documentId);
+      localStorage.setItem("currentPageId", documentId);
+    } else {
+      localStorage.removeItem("currentDocumentId");
+      localStorage.removeItem("currentPageId");
+    }
+
+    localStorage.setItem("currentDocumentType", documentType);
+  };
+
   const performSave = async () => {
     set({ isSaving: true });
-    const { components, theme, pageName, currentPageId, siteId } = get();
+    const state = get();
 
     try {
-      const pageData = {
-        name: pageName,
-        components,
-        theme,
-        ...(isValidUuid(siteId) ? { site_id: siteId } : {}),
-      };
+      if (!isValidUuid(state.siteId)) {
+        throw new Error("Cannot save a document without a selected site.");
+      }
 
-      if (currentPageId) {
-        try {
-          await updatePage(currentPageId, pageData);
-          console.log("Auto-saved successfully");
-        } catch (updateError: unknown) {
-          console.error(
-            "Failed to update page, trying to create new:",
-            updateError,
-          );
-          if (getErrorCode(updateError) === "NOT_FOUND") {
-            const savedPage = await savePage(pageData);
-            set({
-              currentPageId: savedPage.id,
-              siteId: isValidUuid(savedPage.site_id) ? savedPage.site_id : null,
-            });
-            console.log("Page created and auto-saved");
-          } else {
-            throw updateError;
-          }
-        }
+      if (state.documentType === "post") {
+        const postData = {
+          site_id: state.siteId,
+          name: state.pageName,
+          slug: state.slug.trim() || slugify(state.pageName || "post"),
+          menu_title: state.menuTitle.trim() || state.pageName,
+          meta_title: state.metaTitle.trim() || state.pageName,
+          meta_description: state.metaDescription.trim() || null,
+          meta_keywords: state.metaKeywords.trim() || null,
+          excerpt: state.excerpt.trim() || null,
+          status: state.status,
+          author: state.author.trim() || null,
+          published_date: state.publishedDate.trim() || null,
+          featured_image_url: state.featuredImageUrl.trim() || null,
+          components: state.components,
+          theme: state.theme,
+        };
+
+        const savedPost = state.currentPageId
+          ? await updatePost(state.currentPageId, postData)
+          : await createPost(postData);
+
+        persistDocumentSelection(savedPost.id, "post");
+        set({
+          currentPageId: savedPost.id,
+          siteId: isValidUuid(savedPost.site_id) ? savedPost.site_id : state.siteId,
+          slug: savedPost.slug || postData.slug,
+          metaTitle: savedPost.meta_title || "",
+          metaDescription: savedPost.meta_description || "",
+          metaKeywords: savedPost.meta_keywords || "",
+          excerpt: savedPost.excerpt || "",
+          status: (savedPost.status as DocumentStatus | null) || "draft",
+          menuTitle: savedPost.menu_title || "",
+          author: savedPost.author || "",
+          publishedDate: savedPost.published_date || "",
+          featuredImageUrl: savedPost.featured_image_url || "",
+        });
       } else {
-        const savedPage = await savePage(pageData);
+        const pageData = {
+          site_id: state.siteId,
+          name: state.pageName,
+          slug: state.slug.trim() || slugify(state.pageName || "page"),
+          meta_title: state.metaTitle.trim() || state.pageName,
+          meta_description: state.metaDescription.trim() || null,
+          meta_keywords: state.metaKeywords.trim() || null,
+          excerpt: state.excerpt.trim() || null,
+          status: state.status,
+          components: state.components,
+          theme: state.theme,
+        };
+
+        const savedPage = state.currentPageId
+          ? await updatePage(state.currentPageId, pageData)
+          : await createPage(pageData);
+
+        persistDocumentSelection(savedPage.id, "page");
         set({
           currentPageId: savedPage.id,
-          siteId: isValidUuid(savedPage.site_id) ? savedPage.site_id : null,
+          siteId: isValidUuid(savedPage.site_id) ? savedPage.site_id : state.siteId,
+          slug: savedPage.slug || pageData.slug,
+          metaTitle: savedPage.meta_title || "",
+          metaDescription: savedPage.meta_description || "",
+          metaKeywords: savedPage.meta_keywords || "",
+          excerpt: savedPage.excerpt || "",
+          status: (savedPage.status as DocumentStatus | null) || "draft",
         });
-        console.log("Page created and auto-saved");
       }
     } catch (error) {
       console.error("Auto-save failed:", error);
+
+      if (getErrorCode(error) === "NOT_FOUND") {
+        set({ currentPageId: null });
+      }
     } finally {
       set({ isSaving: false });
     }
@@ -105,9 +214,20 @@ export const useEditorStore = create<EditorState>((set, get) => {
     selectedComponentId: null,
     theme: defaultTheme,
     isEditing: true,
-    currentPageId: getInitialPageId(),
+    currentPageId: getInitialDocumentId(),
     siteId: null,
     pageName: "Untitled Page",
+    documentType: getInitialDocumentType(),
+    slug: "",
+    metaTitle: "",
+    metaDescription: "",
+    metaKeywords: "",
+    excerpt: "",
+    status: "draft",
+    menuTitle: "",
+    author: "",
+    publishedDate: "",
+    featuredImageUrl: "",
     autoSaveTimeout: null,
     isSaving: false,
 
@@ -189,10 +309,7 @@ export const useEditorStore = create<EditorState>((set, get) => {
     setEditing: (isEditing) => set({ isEditing }),
 
     resetEditor: () => {
-      // Clear persisted page ID
-      if (typeof window !== "undefined") {
-        localStorage.removeItem("currentPageId");
-      }
+      persistDocumentSelection(null, "page");
       set({
         components: [],
         selectedComponentId: null,
@@ -201,26 +318,54 @@ export const useEditorStore = create<EditorState>((set, get) => {
         currentPageId: null,
         siteId: null,
         pageName: "Untitled Page",
+        documentType: "page",
+        slug: "",
+        metaTitle: "",
+        metaDescription: "",
+        metaKeywords: "",
+        excerpt: "",
+        status: "draft",
+        menuTitle: "",
+        author: "",
+        publishedDate: "",
+        featuredImageUrl: "",
       });
     },
 
     loadPage: (page) => {
-      const validPageId = normalizePageId(page.id);
+      get().loadDocument(page);
+    },
 
-      if (typeof window !== "undefined") {
-        if (validPageId) {
-          localStorage.setItem("currentPageId", validPageId);
-        } else {
-          localStorage.removeItem("currentPageId");
-        }
-      }
+    loadPost: (post) => {
+      get().loadDocument(post);
+    },
+
+    loadDocument: (document) => {
+      const validId = normalizePageId(document.id);
+      persistDocumentSelection(validId, document.document_type);
 
       set((state) => ({
-        components: page.components,
-        theme: page.theme,
-        currentPageId: validPageId ?? state.currentPageId,
-        siteId: isValidUuid(page.site_id) ? page.site_id : state.siteId,
-        pageName: page.name,
+        components: document.components,
+        theme: document.theme,
+        currentPageId: validId ?? state.currentPageId,
+        siteId: isValidUuid(document.site_id) ? document.site_id : state.siteId,
+        pageName: document.name,
+        documentType: document.document_type,
+        slug: document.slug || "",
+        metaTitle: document.meta_title || "",
+        metaDescription: document.meta_description || "",
+        metaKeywords: document.meta_keywords || "",
+        excerpt: document.excerpt || "",
+        status: (document.status as DocumentStatus | null) || "draft",
+        menuTitle:
+          document.document_type === "post" ? document.menu_title || "" : "",
+        author: document.document_type === "post" ? document.author || "" : "",
+        publishedDate:
+          document.document_type === "post" ? document.published_date || "" : "",
+        featuredImageUrl:
+          document.document_type === "post"
+            ? document.featured_image_url || ""
+            : "",
         selectedComponentId: null,
       }));
     },
@@ -230,7 +375,33 @@ export const useEditorStore = create<EditorState>((set, get) => {
       get().triggerAutoSave();
     },
 
-    setCurrentPageId: (id) => set({ currentPageId: id }),
+    setCurrentPageId: (id) => {
+      persistDocumentSelection(id, get().documentType);
+      set({ currentPageId: id });
+    },
+
+    setDocumentType: (documentType) => {
+      persistDocumentSelection(get().currentPageId, documentType);
+      set({ documentType });
+    },
+
+    updateDocumentMeta: (patch) => {
+      set((state) => ({
+        slug: patch.slug ?? state.slug,
+        metaTitle: patch.metaTitle ?? state.metaTitle,
+        metaDescription: patch.metaDescription ?? state.metaDescription,
+        metaKeywords: patch.metaKeywords ?? state.metaKeywords,
+        excerpt: patch.excerpt ?? state.excerpt,
+        status: patch.status ?? state.status,
+        menuTitle: patch.menuTitle ?? state.menuTitle,
+        author: patch.author ?? state.author,
+        publishedDate: patch.publishedDate ?? state.publishedDate,
+        featuredImageUrl: patch.featuredImageUrl ?? state.featuredImageUrl,
+      }));
+      get().triggerAutoSave();
+    },
+
+    setSiteId: (siteId) => set({ siteId }),
 
     triggerAutoSave: () => {
       const state = get();
@@ -241,7 +412,7 @@ export const useEditorStore = create<EditorState>((set, get) => {
 
       const timeout = setTimeout(() => {
         void performSave();
-      }, 2000);
+      }, 1200);
 
       set({ autoSaveTimeout: timeout });
     },
@@ -256,3 +427,13 @@ export const useEditorStore = create<EditorState>((set, get) => {
     },
   };
 });
+
+export async function hydrateCurrentDocumentBundle() {
+  const state = useEditorStore.getState();
+
+  if (!state.currentPageId) {
+    return null;
+  }
+
+  return loadDocumentBundle(state.documentType, state.currentPageId);
+}

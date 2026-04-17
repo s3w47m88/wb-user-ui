@@ -57,18 +57,20 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
       };
 
       try {
-        // Save to database first
-        const { savePage } = await import("@/lib/page-service");
-        const savedPage = await savePage({
+        const { createSite } = await import("@/lib/cms-service");
+        const createdSite = await createSite({
           name: siteName || "My Site",
-          components: customizedTemplate.components,
-          theme: customizedTemplate.theme,
-          site_domain: siteDomain || undefined,
+          domain: siteDomain || null,
           use_temporary_domain: formData.useTemporaryDomain,
+          initial_page: {
+            name: siteName || "My Site",
+            components: customizedTemplate.components,
+            theme: customizedTemplate.theme,
+          },
         });
 
         // Then load into store
-        loadPageToStore(savedPage);
+        loadPageToStore(createdSite.home_page);
       } catch (error) {
         console.error("Failed to create site:", error);
         alert("Failed to create site. Please try again.");
@@ -368,6 +370,7 @@ const TemplatePreview: React.FC<{ template: PageTemplate }> = ({
 
     loadPageToStore({
       id: "preview",
+      document_type: "page",
       name: template.name,
       components: template.components,
       theme: template.theme,
@@ -376,6 +379,7 @@ const TemplatePreview: React.FC<{ template: PageTemplate }> = ({
     return () => {
       loadPageToStore({
         id: "preview",
+        document_type: "page",
         name: restoreState.pageName,
         components: restoreState.components,
         theme: restoreState.theme,

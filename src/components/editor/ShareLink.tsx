@@ -10,14 +10,18 @@ type ShareLinkProps = {
 };
 
 export const ShareLink: React.FC<ShareLinkProps> = ({ isOpen, onClose }) => {
-  const { currentPageId } = useEditorStore();
+  const { currentPageId, documentType } = useEditorStore();
   const [copied, setCopied] = useState(false);
 
   if (!isOpen) return null;
 
   const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
-  const shareUrl = currentPageId ? `${baseUrl}/preview/${currentPageId}` : '';
-  const editUrl = currentPageId ? `${baseUrl}/?page=${currentPageId}` : '';
+  const shareUrl = currentPageId
+    ? `${baseUrl}/preview/${currentPageId}?type=${documentType}`
+    : '';
+  const editUrl = currentPageId
+    ? `${baseUrl}/?document=${currentPageId}&type=${documentType}`
+    : '';
 
   const handleCopy = (url: string) => {
     navigator.clipboard.writeText(url);

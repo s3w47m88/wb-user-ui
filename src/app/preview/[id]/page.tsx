@@ -1,15 +1,28 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { loadPublicPage } from "@/lib/page-service";
-import { PageConfig } from "@/lib/supabase-content";
+import { loadPublicPost } from "@/lib/cms-service";
+import {
+  CmsDocument,
+  MenuConfig,
+  PageConfig,
+  PostConfig,
+  SiteConfig,
+} from "@/lib/supabase-content";
 import { EditableBlock } from "@/components/editor/EditableBlock";
+import { CmsDataProvider } from "@/components/cms/CmsDataContext";
 
 export default function PreviewPage() {
   const params = useParams();
-  const [page, setPage] = useState<PageConfig | null>(null);
+  const searchParams = useSearchParams();
+  const [document, setDocument] = useState<CmsDocument | null>(null);
+  const [site, setSite] = useState<SiteConfig | null>(null);
+  const [pages, setPages] = useState<PageConfig[]>([]);
+  const [posts, setPosts] = useState<PostConfig[]>([]);
+  const [menus, setMenus] = useState<MenuConfig[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -17,8 +30,36 @@ export default function PreviewPage() {
     async function fetchPage() {
       try {
         const pageId = params.id as string;
-        const pageData = await loadPublicPage(pageId);
-        setPage(pageData);
+        const requestedType = searchParams.get("type");
+        const pageData =
+          requestedType === "post"
+            ? await loadPublicPost(pageId)
+            : await loadPublicPage(pageId);
+        setDocument(pageData);
+
+        if (pageData.site_id) {
+          const bundleResponse = await fetch(
+            `/api/public/sites/${pageData.site_id}/bundle`,
+          );
+
+          if (bundleResponse.ok) {
+            const bundle = (await bundleResponse.json()) as {
+              site: SiteConfig | null;
+              pages: PageConfig[];
+              posts: PostConfig[];
+              menus: MenuConfig[];
+            };
+            setSite(bundle.site);
+            setPages(bundle.pages);
+            setPosts(bundle.posts);
+            setMenus(bundle.menus);
+          }
+        } else {
+          setSite(null);
+          setPages([]);
+          setPosts([]);
+          setMenus([]);
+        }
       } catch (err) {
         console.error("Error loading page:", err);
         setError("Failed to load page. Please check the link and try again.");
@@ -28,7 +69,7 @@ export default function PreviewPage() {
     }
 
     fetchPage();
-  }, [params.id]);
+  }, [params.id, searchParams]);
 
   if (loading) {
     return (
@@ -41,7 +82,7 @@ export default function PreviewPage() {
     );
   }
 
-  if (error || !page) {
+  if (error || !document) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center max-w-md">
@@ -69,7 +110,7 @@ export default function PreviewPage() {
       <div className="bg-gray-900 text-white px-6 py-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-          <span className="text-sm font-medium">{page.name}</span>
+          <span className="text-sm font-medium">{document.name}</span>
         </div>
         <Link
           href="/"
@@ -80,19 +121,21 @@ export default function PreviewPage() {
       </div>
 
       {/* Page Content */}
-      <div>
-        {page.components
-          .sort((a, b) => a.order - b.order)
-          .map((component) => (
-            <EditableBlock
-              key={component.id}
-              component={component}
-              disabled
-              pageId={page.id}
-              themeOverride={page.theme}
-            />
-          ))}
-      </div>
+      <CmsDataProvider site={site} pages={pages} posts={posts} menus={menus}>
+        <div>
+          {document.components
+            .sort((a, b) => a.order - b.order)
+            .map((component) => (
+              <EditableBlock
+                key={component.id}
+                component={component}
+                disabled
+                pageId={document.id}
+                themeOverride={document.theme}
+              />
+            ))}
+        </div>
+      </CmsDataProvider>
     </div>
   );
 }

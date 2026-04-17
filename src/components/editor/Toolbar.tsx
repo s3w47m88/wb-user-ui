@@ -4,32 +4,30 @@ import React, { useState, useEffect } from "react";
 import { useEditorStore } from "@/store/editor-store";
 import { getAllBlockConfigs, getCategories } from "@/lib/block-registry";
 import {
-  Plus,
-  Eye,
-  EyeOff,
   Palette,
   Layout,
-  Share2,
-  Blocks,
   Briefcase,
   FolderOpen,
   Building2,
   LogOut,
+  Settings2,
 } from "lucide-react";
 import { ThemePanel } from "./ThemePanel";
 import { TemplateSelector } from "./TemplateSelector";
 import { ShareLink } from "./ShareLink";
 import { BrandPanel } from "./BrandPanel";
-import { SitesPanel } from "./SitesPanel";
+import { CmsNavigator } from "./CmsNavigator";
 import { OrganizationSwitcher } from "./OrganizationSwitcher";
 import { loadPage } from "@/lib/page-service";
+import { loadPost } from "@/lib/cms-service";
 import { PageTemplate } from "@/lib/templates";
 import { useSearchParams } from "next/navigation";
 import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
+import { DocumentPropertiesModal } from "./DocumentPropertiesModal";
 
 type ToolbarProps = {
-  onCreateNewSite?: () => void;
+  onCmsMutated?: () => void;
 };
 
 type DraggableBlockButtonProps = {
@@ -80,55 +78,55 @@ const DraggableBlockButton: React.FC<DraggableBlockButtonProps> = ({
   );
 };
 
-export const Toolbar: React.FC<ToolbarProps> = ({ onCreateNewSite }) => {
+export const Toolbar: React.FC<ToolbarProps> = ({ onCmsMutated }) => {
   const {
-    addComponent,
-    isEditing,
-    setEditing,
-    components,
-    theme,
     pageName,
     currentPageId,
+    documentType,
     setPageName,
-    setCurrentPageId,
     loadPage: loadPageToStore,
+    loadPost: loadPostToStore,
     resetEditor,
     isSaving,
   } = useEditorStore();
   const [showThemePanel, setShowThemePanel] = useState(false);
   const [showTemplateSelector, setShowTemplateSelector] = useState(false);
   const [showShareLink, setShowShareLink] = useState(false);
-  const [showSitesPanel, setShowSitesPanel] = useState(false);
+  const [showCmsNavigator, setShowCmsNavigator] = useState(false);
   const searchParams = useSearchParams();
 
-  const categories = getCategories();
-  const blocks = getAllBlockConfigs();
+  const [showDocumentProperties, setShowDocumentProperties] = useState(false);
 
   // Load page from URL parameter on mount
   useEffect(() => {
-    const pageId = searchParams.get("page");
-    if (pageId) {
-      loadPage(pageId)
-        .then((page) => {
-          loadPageToStore(page);
-        })
-        .catch((err) => {
-          console.error("Failed to load page from URL:", err);
-        });
-    }
-  }, [searchParams, loadPageToStore]);
+    const documentId = searchParams.get("document") || searchParams.get("page");
+    const requestedType = searchParams.get("type");
 
-  const handleAddBlock = (
-    type: string,
-    defaultProps: Record<string, unknown>,
-  ) => {
-    addComponent(type, defaultProps);
-    // Keep panel open when clicking to add
-  };
+    if (documentId) {
+      if (requestedType === "post") {
+        loadPost(documentId)
+          .then((post) => {
+            loadPostToStore(post);
+          })
+          .catch((err) => {
+            console.error("Failed to load post from URL:", err);
+          });
+      } else {
+        loadPage(documentId)
+          .then((page) => {
+            loadPageToStore(page);
+          })
+          .catch((err) => {
+            console.error("Failed to load page from URL:", err);
+          });
+      }
+    }
+  }, [searchParams, loadPageToStore, loadPostToStore]);
 
   const handleSelectTemplate = (template: PageTemplate) => {
     loadPageToStore({
       id: currentPageId || "",
+      document_type: "page",
       name: pageName || template.name,
       components: template.components,
       theme: template.theme,
@@ -136,21 +134,14 @@ export const Toolbar: React.FC<ToolbarProps> = ({ onCreateNewSite }) => {
     setShowTemplateSelector(false);
   };
 
-  const handleCreateNewSite = () => {
-    resetEditor();
-    setShowSitesPanel(false);
-    if (onCreateNewSite) {
-      onCreateNewSite();
-    }
-  };
-
   const [showBrandPanel, setShowBrandPanel] = useState(false);
   const [showOrgSwitcher, setShowOrgSwitcher] = useState(false);
 
   const handleOrganizationChange = (organizationId: string | null) => {
     resetEditor();
-    setShowSitesPanel(false);
+    setShowCmsNavigator(false);
     console.log("Organization changed to:", organizationId);
+    onCmsMutated?.();
   };
 
   const handleLogout = async () => {
@@ -171,12 +162,21 @@ export const Toolbar: React.FC<ToolbarProps> = ({ onCreateNewSite }) => {
     <div className="bg-white border-b border-gray-200 px-6 py-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
+          <div
+            className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.28em] ${
+              documentType === "post"
+                ? "bg-blue-100 text-blue-700"
+                : "bg-gray-100 text-gray-700"
+            }`}
+          >
+            {documentType === "post" ? "Post" : "Page"}
+          </div>
           <input
             type="text"
             value={pageName}
             onChange={(e) => setPageName(e.target.value)}
             className="text-xl font-bold bg-transparent border-b-2 border-transparent hover:border-gray-300 focus:border-red-600 focus:outline-none px-2 py-1"
-            placeholder="Campaign Name"
+            placeholder={documentType === "post" ? "Post Title" : "Page Name"}
           />
         </div>
 
@@ -193,14 +193,25 @@ export const Toolbar: React.FC<ToolbarProps> = ({ onCreateNewSite }) => {
           </button>
 
           <button
-            onClick={() => setShowSitesPanel(true)}
+            onClick={() => setShowCmsNavigator(true)}
             className="group flex items-center overflow-hidden px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-all"
-            title="Sites"
+            title="CMS"
             data-sites-button
           >
             <FolderOpen size={16} className="flex-shrink-0" />
             <span className="max-w-0 overflow-hidden group-hover:max-w-xs group-hover:ml-2 transition-all duration-300 whitespace-nowrap">
-              Sites
+              CMS
+            </span>
+          </button>
+
+          <button
+            onClick={() => setShowDocumentProperties(true)}
+            className="group flex items-center overflow-hidden px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-all"
+            title="Properties"
+          >
+            <Settings2 size={16} className="flex-shrink-0" />
+            <span className="max-w-0 overflow-hidden group-hover:max-w-xs group-hover:ml-2 transition-all duration-300 whitespace-nowrap">
+              Properties
             </span>
           </button>
 
@@ -305,11 +316,17 @@ export const Toolbar: React.FC<ToolbarProps> = ({ onCreateNewSite }) => {
         onOrganizationChange={handleOrganizationChange}
       />
 
-      {/* Sites Panel */}
-      <SitesPanel
-        isOpen={showSitesPanel}
-        onClose={() => setShowSitesPanel(false)}
-        onCreateNew={handleCreateNewSite}
+      <CmsNavigator
+        isOpen={showCmsNavigator}
+        onClose={() => setShowCmsNavigator(false)}
+        onCmsMutated={() => {
+          onCmsMutated?.();
+        }}
+      />
+
+      <DocumentPropertiesModal
+        isOpen={showDocumentProperties}
+        onClose={() => setShowDocumentProperties(false)}
       />
 
       {/* Brand Panel */}

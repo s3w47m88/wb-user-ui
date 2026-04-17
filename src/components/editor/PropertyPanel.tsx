@@ -1,11 +1,13 @@
 "use client";
 
 import React, { useState } from "react";
+import { useCmsData } from "@/components/cms/CmsDataContext";
 import { useEditorStore } from "@/store/editor-store";
 import { getBlockConfig } from "@/lib/block-registry";
 import { X, Wand2 } from "lucide-react";
 import { ImageGenerator } from "./ImageGenerator";
 import { ImageUploadField } from "./ImageUploadField";
+import { BrandedSelect } from "@/components/ui/BrandedSelect";
 
 type PropertySchema = {
   type: string;
@@ -25,6 +27,7 @@ export const PropertyPanel: React.FC = () => {
     selectComponent,
     saveNow,
   } = useEditorStore();
+  const { menus } = useCmsData();
   const [showImageGenerator, setShowImageGenerator] = useState(false);
   const [currentImageProp, setCurrentImageProp] = useState<string | null>(null);
 
@@ -72,7 +75,8 @@ export const PropertyPanel: React.FC = () => {
     const value = selectedComponent.props[key];
     return typeof value === "number" ? value : "";
   };
-  const getBooleanValue = (key: string) => selectedComponent.props[key] === true;
+  const getBooleanValue = (key: string) =>
+    selectedComponent.props[key] === true;
   return (
     <div className="w-80 bg-white border-l border-gray-200 overflow-auto">
       <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
@@ -194,19 +198,36 @@ export const PropertyPanel: React.FC = () => {
             )}
 
             {schema.type === "select" && (
-              <select
+              <BrandedSelect
                 value={getStringValue(key)}
                 onChange={(e) => handlePropertyChange(key, e.target.value)}
                 onBlur={saveNow}
                 aria-label={schema.label}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                chromeSize="sm"
               >
                 {(schema.options ?? []).map((option: string) => (
                   <option key={option} value={option}>
                     {option}
                   </option>
                 ))}
-              </select>
+              </BrandedSelect>
+            )}
+
+            {schema.type === "menu-select" && (
+              <BrandedSelect
+                value={getStringValue(key)}
+                onChange={(e) => handlePropertyChange(key, e.target.value)}
+                onBlur={saveNow}
+                aria-label={schema.label}
+                chromeSize="sm"
+              >
+                <option value="">Select a menu</option>
+                {menus.map((menu) => (
+                  <option key={menu.id} value={menu.id}>
+                    {menu.name}
+                  </option>
+                ))}
+              </BrandedSelect>
             )}
 
             {schema.type === "image" && (
