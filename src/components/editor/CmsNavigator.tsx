@@ -58,6 +58,7 @@ export const CmsNavigator: React.FC<CmsNavigatorProps> = ({
     documentType,
     loadPage: loadPageToStore,
     loadPost: loadPostToStore,
+    setSite,
     setSiteId,
   } = useEditorStore();
   const [sites, setSites] = useState<SiteConfig[]>([]);
@@ -138,6 +139,7 @@ export const CmsNavigator: React.FC<CmsNavigatorProps> = ({
   const handleSelectPage = async (page: PageConfig) => {
     const fullPage = await loadPage(page.id);
     setSiteId(fullPage.site_id || null);
+    setSite(activeSite);
     loadPageToStore(fullPage);
     onCmsMutated();
     onClose();
@@ -146,6 +148,7 @@ export const CmsNavigator: React.FC<CmsNavigatorProps> = ({
   const handleSelectPost = async (post: PostConfig) => {
     const fullPost = await loadPost(post.id);
     setSiteId(fullPost.site_id || null);
+    setSite(activeSite);
     loadPostToStore(fullPost);
     onCmsMutated();
     onClose();
@@ -170,7 +173,7 @@ export const CmsNavigator: React.FC<CmsNavigatorProps> = ({
           },
         });
 
-        setSiteId(createdSite.site.id || null);
+        setSite(createdSite.site);
         loadPageToStore(createdSite.home_page);
         setCreateMode(null);
         setDraft(INITIAL_DRAFT);
@@ -258,7 +261,7 @@ export const CmsNavigator: React.FC<CmsNavigatorProps> = ({
                   key={site.id}
                   onClick={() => {
                     setSelectedSiteId(site.id || null);
-                    setSiteId(site.id || null);
+                    setSite(site);
                     void refreshAll(site.id || null);
                   }}
                   className={`w-full rounded-2xl border px-4 py-4 text-left transition-colors ${

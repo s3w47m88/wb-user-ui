@@ -24,6 +24,13 @@ export type SiteCreateInput = {
   };
 };
 
+export type SiteUpdateInput = {
+  name?: string | null;
+  business_name?: string | null;
+  logo_url?: string | null;
+  brand_settings?: SiteConfig["brand_settings"];
+};
+
 export type PageSaveInput = {
   site_id: string;
   name: string;
@@ -197,6 +204,25 @@ export async function createSite(input: SiteCreateInput) {
   });
 
   return parseJsonResponse<{ site: SiteConfig; home_page: PageConfig }>(response);
+}
+
+export async function loadSite(id: string) {
+  const response = await fetch(`/api/sites/${id}`, {
+    method: "GET",
+    headers: await buildAuthenticatedHeaders(),
+  });
+
+  return parseJsonResponse<SiteConfig>(response);
+}
+
+export async function updateSite(id: string, input: SiteUpdateInput) {
+  const response = await fetch(`/api/sites/${id}`, {
+    method: "PATCH",
+    headers: await buildAuthenticatedHeaders(true),
+    body: JSON.stringify(input),
+  });
+
+  return parseJsonResponse<SiteConfig>(response);
 }
 
 export async function getPages(query: DocumentQuery = {}) {

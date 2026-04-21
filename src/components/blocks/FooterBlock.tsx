@@ -5,6 +5,7 @@ import React from 'react';
 export type FooterBlockProps = {
   companyName: string;
   tagline: string;
+  logoUrl?: string;
   links: Array<{
     title: string;
     url: string;
@@ -19,6 +20,7 @@ export type FooterBlockProps = {
 export const FooterBlock: React.FC<FooterBlockProps> = ({
   companyName,
   tagline,
+  logoUrl,
   links,
   socialLinks = [],
 }) => {
@@ -28,6 +30,13 @@ export const FooterBlock: React.FC<FooterBlockProps> = ({
         <div className="grid md:grid-cols-3 gap-8 mb-8">
           {/* Company Info */}
           <div>
+            {logoUrl ? (
+              <img
+                src={logoUrl}
+                alt={`${companyName} logo`}
+                className="mb-4 h-12 w-auto max-w-[180px] object-contain"
+              />
+            ) : null}
             <h3 className="text-2xl font-bold mb-2">{companyName}</h3>
             <p className="text-gray-400">{tagline}</p>
           </div>
@@ -81,6 +90,7 @@ export const footerBlockConfig = {
   defaultProps: {
     companyName: 'Your Campaign',
     tagline: 'Fighting for American Values',
+    logoUrl: '',
     links: [
       { title: 'About', url: '#about' },
       { title: 'News', url: '#news' },
@@ -98,6 +108,7 @@ export const footerBlockConfig = {
   propsSchema: {
     companyName: { type: 'text', label: 'Campaign Name' },
     tagline: { type: 'text', label: 'Tagline' },
+    logoUrl: { type: 'image', label: 'Logo' },
     links: { type: 'array', label: 'Links' },
     socialLinks: { type: 'array', label: 'Social Links' },
   },

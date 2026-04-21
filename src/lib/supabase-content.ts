@@ -55,6 +55,8 @@ export type SiteConfig = {
   name?: string | null;
   domain?: string | null;
   business_name?: string | null;
+  logo_url?: string | null;
+  brand_settings?: SiteBrandSettings | null;
   created_at?: string | null;
   updated_at?: string | null;
 };
@@ -113,4 +115,23 @@ export type ThemeConfig = {
     body: string;
   };
   mode: "light" | "dark";
+};
+
+export type SiteBrandReferenceImage = {
+  id: string;
+  url: string;
+  label?: string | null;
+};
+
+export type SiteBrandSettings = {
+  tagline: string;
+  description: string;
+  audience: string;
+  voice: string;
+  visual_direction: string;
+  fonts: {
+    heading: string;
+    body: string;
+  };
+  reference_images: SiteBrandReferenceImage[];
 };

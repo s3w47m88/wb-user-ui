@@ -10,6 +10,7 @@ import {
   toDatabasePageId,
 } from "@/lib/builder-pages";
 import { FlatMenuItemRecord } from "@/lib/menu-tree";
+import { normalizeSiteBrandSettings } from "@/lib/site-branding";
 
 const contentSupabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_CONTENT_URL!;
 const contentServiceKey = process.env.SUPABASE_CONTENT_SECRET_KEY!;
@@ -19,7 +20,7 @@ const controlPublishableKey =
 const controlServiceKey = process.env.SUPABASE_CONTROL_SECRET_KEY!;
 
 export const SITE_SELECT =
-  "id, org_id, slug, name, domain, business_name, created_at, updated_at";
+  "id, org_id, slug, name, domain, business_name, logo_url, brand_settings, created_at, updated_at";
 export const PAGE_SELECT =
   "id, title, slug, content, meta_title, meta_description, meta_keywords, updated_at, created_at, hero_title, hero_subtitle, hero_description, hero_image_url, status, intro_text, comparison_content, testimonial_quote, testimonial_author, cta_title, cta_text, cta_button_text, cta_button_link, features_section_title, products_section_title, site_id, excerpt";
 export const POST_SELECT =
@@ -238,6 +239,8 @@ export async function createSiteRecord(
     organizationId: string;
     siteName: string;
     siteDomain: string | null;
+    logoUrl?: string | null;
+    brandSettings?: Record<string, unknown> | null;
   },
 ) {
   const baseSlug = slugify(input.siteName);
@@ -258,6 +261,8 @@ export async function createSiteRecord(
       name: input.siteName,
       business_name: input.siteName,
       domain: input.siteDomain,
+      logo_url: input.logoUrl?.trim() || null,
+      brand_settings: normalizeSiteBrandSettings(input.brandSettings),
     })
     .select(SITE_SELECT)
     .single();

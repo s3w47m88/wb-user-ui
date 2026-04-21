@@ -1,13 +1,16 @@
 import { AiImageProvider } from "@/lib/ai-image-provider";
 import { OpenAiImageSize } from "@/lib/openai-image-generation";
+import { ThemeConfig } from "@/lib/supabase-content";
 
 export type ImageGenerationParams = {
   height?: number;
   pageId?: string | null;
   prompt: string;
   provider?: AiImageProvider;
+  referenceImageIds?: string[];
   siteId?: string | null;
   size?: OpenAiImageSize;
+  theme?: ThemeConfig | null;
   width?: number;
 };
 

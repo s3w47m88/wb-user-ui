@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { ComponentData, ThemeConfig } from "@/lib/supabase-content";
+import { ComponentData, SiteConfig, ThemeConfig } from "@/lib/supabase-content";
 import { useEditorStore } from "@/store/editor-store";
 import {
   createLayoutEditor,
@@ -37,12 +37,14 @@ import { ImageUploader } from "./ImageUploader";
 import { FloatingTextToolbar } from "./FloatingTextToolbar";
 import { getBlockComponent } from "@/lib/block-registry";
 import { GridCell } from "@/components/blocks/GridBlock";
+import { useCmsData } from "@/components/cms/CmsDataContext";
 import {
   buildImageUpdate,
   EditableImageTarget,
   getEditableImageUrl,
   GalleryImage,
 } from "@/lib/editor-images";
+import { getSiteBrandSettings } from "@/lib/site-branding";
 
 type EditableBlockProps = {
   component: ComponentData;
@@ -335,11 +337,13 @@ export const EditableBlock: React.FC<EditableBlockProps> = ({
     updateComponent,
     removeComponent,
     theme,
+    site,
     saveNow,
     selectComponent,
     selectedComponentId,
     currentPageId,
   } = useEditorStore();
+  const cmsData = useCmsData();
   const [showImageUploader, setShowImageUploader] = useState(false);
   const [showTextToolbar, setShowTextToolbar] = useState(false);
   const [showSectionSettings, setShowSectionSettings] = useState(false);
@@ -360,6 +364,7 @@ export const EditableBlock: React.FC<EditableBlockProps> = ({
   const sectionStyle = getSectionStyleConfig(component.props);
   const resolvedPageId = pageId ?? currentPageId ?? undefined;
   const resolvedTheme = themeOverride ?? theme;
+  const resolvedSite = site ?? cmsData.site;
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -539,6 +544,7 @@ export const EditableBlock: React.FC<EditableBlockProps> = ({
           handleTextBlur,
           layoutEditor,
           resolvedPageId,
+          resolvedSite,
         )}
       </div>
 
@@ -571,6 +577,7 @@ function renderComponent(
   onTextBlur?: (e: React.FocusEvent) => void,
   layoutEditor?: LayoutEditorApi,
   pageId?: string,
+  site?: SiteConfig | null,
 ) {
   const { type, props } = component;
   const headingFontFamily = theme?.fonts?.heading || "inherit";
@@ -587,7 +594,8 @@ function renderComponent(
   };
   const getNumberProp = (key: string, fallback = 0) =>
     typeof props[key] === "number" ? props[key] : fallback;
-  const getBooleanProp = (key: string) => props[key] === true;
+  const getBooleanProp = (key: string, fallback = false) =>
+    typeof props[key] === "boolean" ? (props[key] as boolean) : fallback;
   const sectionStyle = getSectionStyleConfig(props);
   const getSectionContainer = (defaultMinHeight?: string) =>
     buildSectionContainerStyle(sectionStyle, defaultMinHeight);
@@ -1316,6 +1324,20 @@ function renderComponent(
     const socialLinks = Array.isArray(props.socialLinks)
       ? (props.socialLinks as SocialLink[])
       : [];
+    const siteBrand = getSiteBrandSettings(site);
+    const useSiteBranding = getBooleanProp("useSiteBranding", true);
+    const footerCompanyName =
+      useSiteBranding && site?.name?.trim()
+        ? site.name.trim()
+        : getStringProp("companyName");
+    const footerTagline =
+      useSiteBranding && siteBrand.tagline
+        ? siteBrand.tagline
+        : getStringProp("tagline");
+    const footerLogoUrl =
+      useSiteBranding && site?.logo_url?.trim()
+        ? site.logo_url.trim()
+        : getStringProp("logoUrl");
     const backgroundStyle = buildSectionBackgroundStyle(sectionStyle, {
       backgroundColor: "#111827",
     });
@@ -1332,14 +1354,21 @@ function renderComponent(
           <div className="grid md:grid-cols-3 gap-8 mb-8">
             {/* Company Info */}
             <div>
+              {footerLogoUrl ? (
+                <img
+                  src={footerLogoUrl}
+                  alt={`${footerCompanyName} logo`}
+                  className="mb-4 h-12 w-auto max-w-[180px] object-contain"
+                />
+              ) : null}
               <h3
                 className="text-2xl font-bold mb-2"
-                contentEditable={editable}
+                contentEditable={editable && !useSiteBranding}
                 suppressContentEditableWarning
                 onFocus={(e) => editable && onTextFocus?.(e)}
                 onMouseUp={() => editable && onTextSelect?.()}
                 onBlur={(e) => {
-                  if (editable) {
+                  if (editable && !useSiteBranding) {
                     onTextEdit(
                       "companyName",
                       e.currentTarget.textContent || "",
@@ -1349,35 +1378,43 @@ function renderComponent(
                 }}
                 style={{
                   outline: editable
-                    ? "2px dashed rgba(255, 255, 255, 0.3)"
+                    ? useSiteBranding
+                      ? "none"
+                      : "2px dashed rgba(255, 255, 255, 0.3)"
                     : "none",
-                  cursor: editable ? "text" : "default",
+                  cursor: editable
+                    ? useSiteBranding
+                      ? "default"
+                      : "text"
+                    : "default",
                   fontFamily: headingFontFamily,
                 }}
               >
-                {getStringProp("companyName")}
+                {footerCompanyName}
               </h3>
               <p
                 className="text-gray-400"
-                contentEditable={editable}
+                contentEditable={editable && !useSiteBranding}
                 suppressContentEditableWarning
                 onFocus={(e) => editable && onTextFocus?.(e)}
                 onMouseUp={() => editable && onTextSelect?.()}
                 onBlur={(e) => {
-                  if (editable) {
+                  if (editable && !useSiteBranding) {
                     onTextEdit("tagline", e.currentTarget.textContent || "");
                     onTextBlur?.(e);
                   }
                 }}
                 style={{
                   outline: editable
-                    ? "2px dashed rgba(255, 255, 255, 0.3)"
+                    ? useSiteBranding
+                      ? "none"
+                      : "2px dashed rgba(255, 255, 255, 0.3)"
                     : "none",
-                  cursor: editable ? "text" : "default",
+                  cursor: editable && !useSiteBranding ? "text" : "default",
                   fontFamily: bodyFontFamily,
                 }}
               >
-                {getStringProp("tagline")}
+                {footerTagline}
               </p>
             </div>
 
@@ -1452,7 +1489,7 @@ function renderComponent(
 
           {/* Copyright */}
           <div className="border-t border-gray-800 pt-8 text-center text-gray-400 text-sm">
-            © {new Date().getFullYear()} {getStringProp("companyName")}. All
+            © {new Date().getFullYear()} {footerCompanyName}. All
             rights reserved.
           </div>
         </div>

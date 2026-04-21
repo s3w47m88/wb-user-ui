@@ -12,6 +12,7 @@ import {
   SITE_SELECT,
   PAGE_SELECT,
 } from "../pages/helpers";
+import { normalizeSiteBrandSettings } from "@/lib/site-branding";
 
 const getErrorMessage = (error: unknown) =>
   error instanceof Error ? error.message : "Unexpected error.";
@@ -83,6 +84,10 @@ export async function POST(request: Request) {
       organizationId: organization_id,
       siteName: name,
       siteDomain: use_temporary_domain === true ? null : domain?.trim() || null,
+      logoUrl: null,
+      brandSettings: normalizeSiteBrandSettings({
+        fonts: initial_page?.theme?.fonts,
+      }),
     });
 
     const payload = serializeBuilderPagePayload({

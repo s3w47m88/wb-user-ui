@@ -6,12 +6,14 @@ import {
   DocumentType,
   PageConfig,
   PostConfig,
+  SiteConfig,
   ThemeConfig,
 } from "@/lib/supabase-content";
 import {
   createPage,
   createPost,
   loadDocumentBundle,
+  loadSite,
   updatePage,
   updatePost,
 } from "@/lib/cms-service";
@@ -27,6 +29,7 @@ type EditorState = {
   components: ComponentData[];
   selectedComponentId: string | null;
   theme: ThemeConfig;
+  site: SiteConfig | null;
   isEditing: boolean;
   currentPageId: string | null;
   siteId: string | null;
@@ -74,6 +77,7 @@ type EditorState = {
     }>,
   ) => void;
   setSiteId: (siteId: string | null) => void;
+  setSite: (site: SiteConfig | null) => void;
   triggerAutoSave: () => void;
   saveNow: () => void;
 };
@@ -213,6 +217,7 @@ export const useEditorStore = create<EditorState>((set, get) => {
     components: [],
     selectedComponentId: null,
     theme: defaultTheme,
+    site: null,
     isEditing: true,
     currentPageId: getInitialDocumentId(),
     siteId: null,
@@ -314,6 +319,7 @@ export const useEditorStore = create<EditorState>((set, get) => {
         components: [],
         selectedComponentId: null,
         theme: defaultTheme,
+        site: null,
         isEditing: false,
         currentPageId: null,
         siteId: null,
@@ -343,12 +349,15 @@ export const useEditorStore = create<EditorState>((set, get) => {
     loadDocument: (document) => {
       const validId = normalizePageId(document.id);
       persistDocumentSelection(validId, document.document_type);
+      const resolvedSiteId = isValidUuid(document.site_id)
+        ? document.site_id
+        : null;
 
       set((state) => ({
         components: document.components,
         theme: document.theme,
         currentPageId: validId ?? state.currentPageId,
-        siteId: isValidUuid(document.site_id) ? document.site_id : state.siteId,
+        siteId: resolvedSiteId ?? state.siteId,
         pageName: document.name,
         documentType: document.document_type,
         slug: document.slug || "",
@@ -368,6 +377,19 @@ export const useEditorStore = create<EditorState>((set, get) => {
             : "",
         selectedComponentId: null,
       }));
+
+      if (resolvedSiteId) {
+        void loadSite(resolvedSiteId)
+          .then((site) => {
+            set({ site });
+          })
+          .catch((error) => {
+            console.error("Failed to load site for current document:", error);
+            set({ site: null });
+          });
+      } else {
+        set({ site: null });
+      }
     },
 
     setPageName: (name) => {
@@ -401,7 +423,17 @@ export const useEditorStore = create<EditorState>((set, get) => {
       get().triggerAutoSave();
     },
 
-    setSiteId: (siteId) => set({ siteId }),
+    setSiteId: (siteId) =>
+      set((state) => ({
+        siteId,
+        site: siteId === state.siteId ? state.site : null,
+      })),
+
+    setSite: (site) =>
+      set({
+        site,
+        siteId: isValidUuid(site?.id) ? site.id : null,
+      }),
 
     triggerAutoSave: () => {
       const state = get();

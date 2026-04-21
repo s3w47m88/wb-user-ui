@@ -5,6 +5,8 @@ import { useEditorStore } from "@/store/editor-store";
 import { ThemeConfig } from "@/lib/supabase-content";
 import { X } from "lucide-react";
 import tinycolor from "tinycolor2";
+import { BRAND_FONT_OPTIONS, getSiteBrandSettings } from "@/lib/site-branding";
+import { BrandedSelect } from "@/components/ui/BrandedSelect";
 
 type ThemePanelProps = {
   isOpen: boolean;
@@ -120,8 +122,9 @@ const prebuiltThemes: PrebuiltTheme[] = [
 ];
 
 export const ThemePanel: React.FC<ThemePanelProps> = ({ isOpen, onClose }) => {
-  const { theme, updateTheme } = useEditorStore();
+  const { site, theme, updateTheme } = useEditorStore();
   const [activeTab, setActiveTab] = useState<"prebuilt" | "custom">("prebuilt");
+  const siteBrand = getSiteBrandSettings(site);
 
   if (!isOpen) return null;
 
@@ -293,6 +296,83 @@ export const ThemePanel: React.FC<ThemePanelProps> = ({ isOpen, onClose }) => {
                     </div>
                   </div>
                 ))}
+              </div>
+
+              <div className="space-y-4 rounded-2xl border border-gray-200 bg-gray-50 p-4">
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-900">
+                      Typography
+                    </h3>
+                    <p className="text-xs text-gray-500">
+                      Per-page font overrides. Brand kit fonts can still be used as the starting point.
+                    </p>
+                  </div>
+                  {site ? (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        updateTheme({
+                          fonts: {
+                            heading: siteBrand.fonts.heading,
+                            body: siteBrand.fonts.body,
+                          },
+                        })
+                      }
+                      className="rounded-full border border-gray-300 px-3 py-2 text-xs font-semibold text-gray-700 transition-colors hover:bg-white"
+                    >
+                      Use Brand Fonts
+                    </button>
+                  ) : null}
+                </div>
+
+                <label className="block space-y-2">
+                  <span className="text-sm font-medium text-gray-700">
+                    Heading Font
+                  </span>
+                  <BrandedSelect
+                    chromeSize="sm"
+                    value={theme.fonts.heading}
+                    onChange={(event) =>
+                      updateTheme({
+                        fonts: {
+                          heading: event.target.value,
+                          body: theme.fonts.body,
+                        },
+                      })
+                    }
+                  >
+                    {BRAND_FONT_OPTIONS.map((font) => (
+                      <option key={font} value={font}>
+                        {font}
+                      </option>
+                    ))}
+                  </BrandedSelect>
+                </label>
+
+                <label className="block space-y-2">
+                  <span className="text-sm font-medium text-gray-700">
+                    Body Font
+                  </span>
+                  <BrandedSelect
+                    chromeSize="sm"
+                    value={theme.fonts.body}
+                    onChange={(event) =>
+                      updateTheme({
+                        fonts: {
+                          heading: theme.fonts.heading,
+                          body: event.target.value,
+                        },
+                      })
+                    }
+                  >
+                    {BRAND_FONT_OPTIONS.map((font) => (
+                      <option key={font} value={font}>
+                        {font}
+                      </option>
+                    ))}
+                  </BrandedSelect>
+                </label>
               </div>
             </div>
           )}

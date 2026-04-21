@@ -40,7 +40,7 @@ export async function resolveSiteForPublicRequest(input: {
   if (input.siteHint) {
     const { data: hintedSite } = await adminClient
       .from("sites")
-      .select("id, org_id, slug, name, domain, business_name, created_at, updated_at")
+      .select("id, org_id, slug, name, domain, business_name, logo_url, brand_settings, created_at, updated_at")
       .eq("id", input.siteHint)
       .maybeSingle();
 
@@ -60,7 +60,7 @@ export async function resolveSiteForPublicRequest(input: {
 
   const { data: sites } = await adminClient
     .from("sites")
-    .select("id, org_id, slug, name, domain, business_name, created_at, updated_at")
+    .select("id, org_id, slug, name, domain, business_name, logo_url, brand_settings, created_at, updated_at")
     .in("domain", hostCandidates)
     .limit(1);
 
@@ -73,7 +73,7 @@ export async function loadPublicSiteBundle(siteId: string) {
     await Promise.all([
       adminClient
         .from("sites")
-        .select("id, org_id, slug, name, domain, business_name, created_at, updated_at")
+        .select("id, org_id, slug, name, domain, business_name, logo_url, brand_settings, created_at, updated_at")
         .eq("id", siteId)
         .maybeSingle(),
       adminClient
